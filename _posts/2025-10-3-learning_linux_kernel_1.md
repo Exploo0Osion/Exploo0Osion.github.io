@@ -6,6 +6,7 @@ tags: [linux]
 comments: true
 author: Exploooosion
 ---
+<!-- more -->
 # linux kernel
 
 ## 一、kernel pwn学习（一）
