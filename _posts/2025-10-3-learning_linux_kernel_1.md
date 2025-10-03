@@ -1,15 +1,10 @@
 ---
-layout:post
-
-title:"linux kernel学习（一）"
-
-date:   2025-10-3
-
+layout: post
+title: "linux kernel学习（一）"
+date: 2025-10-3
 tags: [linux]
-
-comments:true
-
-author:Exploooosion
+comments: true
+author: Exploooosion
 ---
 # linux kernel
 
