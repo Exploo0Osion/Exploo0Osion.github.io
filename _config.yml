@@ -1,8 +1,8 @@
 name: "Exploooosion's blog"
 description: "wooo~ Exploooosion的个人技术博客"
 
-avatar: https://pianfan.github.io/images/avatar.jpg
-favicon: https://pianfan.github.io/images/favicon.ico
+avatar: https://exploo0osion.github.io//images/1744079716562.jpg
+favicon: https://Exploo0Osion.github.io/images/favicon.ico
 
 navigation:
   - name: 首页
@@ -18,9 +18,9 @@ excerpt_separator: <!-- more -->
 
 footer-links:
   zhihu: 
-  email: xiongyunhan@outlook.com
+  email: exploooosion@stu.scu.edu.cn
   facebook:
-  github: pianfan
+  github: Exploo0Osion
   rss: # just type anything here for a working RSS icon
   twitter: 
   youtube:
