@@ -3,7 +3,7 @@ layout:post
 
 title:"linux kernel学习（二）"
 
-date:   2024-1-25
+date:   2025-10-3
 
 tags: [linux]
 
