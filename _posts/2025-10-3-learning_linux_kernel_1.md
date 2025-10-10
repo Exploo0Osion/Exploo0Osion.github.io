@@ -7,6 +7,7 @@ comments: true
 author: Exploooosion
 ---
 <!-- more -->
+
 # linux kernel
 
 ## 一、kernel pwn学习（一）
@@ -36,6 +37,15 @@ find . | cpio -o --format=newc > ../rootfs.img
 #还原
 mv core.cpio ../core.cpio
 cd ..
+```
+
+#### gadget/地址查找
+
+```bash
+nm ../vmlinux | grep -i 'user_free_payload_rcu'  #查找user_free_payload_rcu的地址
+nm ../vmlinux | grep ' T _stext' #查找kernel_base的地址
+
+ropper -f ../vmlinux --search "push rsi;" #查找gadget
 ```
 
 #### 编译命令

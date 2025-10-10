@@ -7,6 +7,7 @@ comments: true
 author: Exploooosion
 ---
 <!-- more -->
+
 # linux kernel
 
 ## kernel pwn学习（二）
@@ -489,6 +490,52 @@ struct pipe_buf_operations {
 当我们利用 `close(pipe_fd[1]);close(pipe_fd[0]);`关闭管道两端时，会触发 `pipe_buffer->pipe_bufer_operations->release` 指针，因此可以覆写pipe_buf_operations函数表中的release指针或劫持函数表到可控区域，便可劫持程序执行流。其 `rdi`和 `rsi`均可控，`rdi`为 `struct pipe_inode_info`，`rsi`为 `struct pipe_buffer`。
 
 调试时在 `pipe_buf_release`处下断点。
+
+一个栈迁移的JOP gadget（不知道怎么搜这种类型的gadget)，实现效果是
+
+RDX！=RCX时PUSH_RSI_POP_RSP_POP_RBX_POP_RBP_POP_R12_RET
+
+```bash
+# exploooosion @ Exploooosion in ~/mypwn/linux_kernel/Digging-into-Kernel-3/core workenv [15:24:16] 
+$ objdump -D --start-address=0xffffffff81250c9d --stop-address=0xffffffff81250cbf ../vmlinux
+
+../vmlinux：     文件格式 elf64-x86-64
+
+
+Disassembly of section .text:
+
+ffffffff81250c9d <simple_write_begin+0x12d>:
+ffffffff81250c9d:	56                   	push   %rsi
+ffffffff81250c9e:	5c                   	pop    %rsp
+ffffffff81250c9f:	48 39 d1             	cmp    %rdx,%rcx
+ffffffff81250ca2:	72 e1                	jb     ffffffff81250c85 <simple_write_begin+0x115>
+ffffffff81250ca4:	5b                   	pop    %rbx
+ffffffff81250ca5:	31 c0                	xor    %eax,%eax
+ffffffff81250ca7:	5d                   	pop    %rbp
+ffffffff81250ca8:	41 5c                	pop    %r12
+ffffffff81250caa:	e9 91 25 db 00       	jmp    ffffffff82003240 <__x86_return_thunk>
+ffffffff81250caf:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+ffffffff81250cb4:	0f b6 4e 51          	movzbl 0x51(%rsi),%ecx
+ffffffff81250cb8:	b8 00 10 00 00       	mov    $0x1000,%eax
+ffffffff81250cbd:	48 d3              	shl    %cl,%rax
+(workenv) 
+# exploooosion @ Exploooosion in ~/mypwn/linux_kernel/Digging-into-Kernel-3/core workenv [15:27:03] 
+$ objdump -D --start-address=0xffffffff82003240 --stop-address=0xffffffff82003250 ../vmlinux
+
+../vmlinux：     文件格式 elf64-x86-64
+
+
+Disassembly of section .text:
+
+ffffffff82003240 <__x86_return_thunk>:
+ffffffff82003240:	c3                   	ret
+ffffffff82003241:	cc                   	int3
+ffffffff82003242:	0f ae e8             	lfence
+ffffffff82003245:	eb f9                	jmp    ffffffff82003240 <__x86_return_thunk>
+ffffffff82003247:	cc                   	int3
+(workenv) 
+
+```
 
 ### 条件竞争（Race condition）
 
