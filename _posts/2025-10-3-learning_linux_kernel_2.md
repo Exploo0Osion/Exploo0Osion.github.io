@@ -497,7 +497,7 @@ setxattr(struct dentry *d, const char __user *name, const void __user *value,
 | memory1: size=pagesize | memory2: size=pagesize |
 ```
 
-随后,我们 **为第二部分的内存,注册 `userfaultfd`** , 使得访问到这里时直接卡住.
+随后,我们**为第二部分的内存,注册 `userfaultfd`** , 使得访问到这里时直接卡住.
 
 ![1760709522108](../images/learning_linux_kernel_2/1760678357093.png)
 

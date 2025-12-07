@@ -391,7 +391,7 @@ char __fastcall RtlpIsValidExceptionChain(
 主要检查 SEH 是否满足如下条件：
 
 * SEH 节点在栈中
-* SEH节点指向的 Handler 不在栈中
+* SEH 节点指向的 Handler 不在栈中
 * SEH 节点地址 4 字节对齐
 * SEH 最后一个节点的 Next 为 -1 且 Handler 为 RtlpFinalExceptionHandler
 * SEH 节点的 Next 指向的下一个节点的地址一定大于当前节点
