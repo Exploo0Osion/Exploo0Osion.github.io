@@ -1051,6 +1051,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 ### 硬件断点 Hook (Hardware Hook)
 
 利用 CPU 自带的  **调试寄存器 (Dr0 - Dr7)** 。
+
+一个CPU一般有8个调试寄存器（DR0 ~ DR7 寄存器），用于管理硬件断点
+
+* DR0 ~DR3： 存储硬件断点地址。
+* DR4 和 DR5： 保留。
+* DR6：调试状态寄存器，用于向调试器报告事件的详细信息，以供调试器判断发生的是何种事件。
+* DR7：调试控制寄存器，用于定义断点的中断条件。
+
 这是一种 **无损 Hook** ，不需要修改内存中的任何代码或数据，因此能完美绕过内存完整性校验（CRC）。设置断点后，CPU 执行到指定地址会抛出 **`EXCEPTION_SINGLE_STEP`** 异常。
 
 中断hook都得关闭kernel debug：`bcdedit /debug off`
