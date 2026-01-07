@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="多款LB-LINK路由器存在未授权访问漏洞漏洞涉及路由器固件有： BL-G1200_V2.0(V1.0.20)升级固件 BL-AX5400P(V1.0.19)升级固件 BL-AX1800(V1.0.19)升级固件 BL-AC3600(V1.0.22)升级固件 BL-AC2600(V1.0.22)升级固件 BL-X-PRO_V2.0(V1.0.22)升级固件 固件来源于官方：下载中心_必联（LB">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CNVD-2025-10286">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="多款LB-LINK路由器存在未授权访问漏洞漏洞涉及路由器固件有： BL-G1200_V2.0(V1.0.20)升级固件 BL-AX5400P(V1.0.19)升级固件 BL-AX1800(V1.0.19)升级固件 BL-AC3600(V1.0.22)升级固件 BL-AC2600(V1.0.22)升级固件 BL-X-PRO_V2.0(V1.0.22)升级固件 固件来源于官方：下载中心_必联（LB">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743735892380.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743735978950.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750266465.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743736258710.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743736252997.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743736897631.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750283666.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750298212.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750308254.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750334483.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750426122.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743750379015.png">
+<meta property="article:published_time" content="2025-04-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T08:04:31.843Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/CNVD-2025-10286/1743735892380.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>CNVD-2025-10286</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2025/05/08/2025-05-8-CVE-2025-5147/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&text=CNVD-2025-10286"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&is_video=false&description=CNVD-2025-10286"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=CNVD-2025-10286&body=Check out this article: https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&name=CNVD-2025-10286&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&t=CNVD-2025-10286"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%9A%E6%AC%BELB-LINK%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AD%98%E5%9C%A8%E6%9C%AA%E6%8E%88%E6%9D%83%E8%AE%BF%E9%97%AE%E6%BC%8F%E6%B4%9E"><span class="toc-number">1.</span> <span class="toc-text">多款LB-LINK路由器存在未授权访问漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%BC%8F%E6%B4%9E%E8%A1%8D%E7%94%9F%E7%9A%84%E5%8D%B1%E5%AE%B3"><span class="toc-number">1.1.</span> <span class="toc-text">一、漏洞衍生的危害</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%9C%AA%E6%8E%88%E6%9D%83%E4%BF%A1%E6%81%AF%E6%B3%84%E9%9C%B2"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.未授权信息泄露</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AF%A1%E6%94%B9%E8%B7%AF%E7%94%B1%E5%99%A8%E7%99%BB%E5%BD%95%E7%95%8C%E9%9D%A2%E5%AF%86%E7%A0%81"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">篡改路由器登录界面密码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%B7%AF%E7%94%B1%E5%99%A8%E5%BD%93%E5%89%8D%E7%99%BB%E5%BD%95%E5%AF%86%E7%A0%81"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">获取路由器当前登录密码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%B7%AF%E7%94%B1%E4%BF%A1%E6%81%AF"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">获取路由信息</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%80%E5%90%AF%E8%BF%9C%E7%A8%8Bweb%E8%AE%BF%E9%97%AE"><span class="toc-number">1.1.1.4.</span> <span class="toc-text">开启远程web访问</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%9C%AA%E6%8E%88%E6%9D%83%E8%BF%9C%E7%A8%8B%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%EF%BC%88%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%EF%BC%89"><span class="toc-number">1.1.2.</span> <span class="toc-text">2.未授权远程命令执行（命令注入）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0"><span class="toc-number">1.2.</span> <span class="toc-text">二、漏洞成因</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E8%AE%A4%E8%AF%81%E7%BB%95%E8%BF%87"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.认证绕过</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.命令注入</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%AF%A6%E7%BB%86%E8%BF%87%E7%A8%8B"><span class="toc-number">1.3.</span> <span class="toc-text">三、详细过程</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        CNVD-2025-10286
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-04-03T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-04-04</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/router/">router</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="多款LB-LINK路由器存在未授权访问漏洞"><a href="#多款LB-LINK路由器存在未授权访问漏洞" class="headerlink" title="多款LB-LINK路由器存在未授权访问漏洞"></a>多款LB-LINK路由器存在未授权访问漏洞</h1><p>漏洞涉及路由器固件有：</p>
+<p>BL-G1200_V2.0(V1.0.20)升级固件</p>
+<p>BL-AX5400P(V1.0.19)升级固件</p>
+<p>BL-AX1800(V1.0.19)升级固件</p>
+<p>BL-AC3600(V1.0.22)升级固件</p>
+<p>BL-AC2600(V1.0.22)升级固件</p>
+<p>BL-X-PRO_V2.0(V1.0.22)升级固件</p>
+<p>固件来源于官方：<a target="_blank" rel="noopener" href="https://www.b-link.net.cn/downloads_16.html">下载中心_必联（LB-LINK）官方网站</a></p>
+<h2 id="一、漏洞衍生的危害"><a href="#一、漏洞衍生的危害" class="headerlink" title="一、漏洞衍生的危害"></a>一、漏洞衍生的危害</h2><h3 id="1-未授权信息泄露"><a href="#1-未授权信息泄露" class="headerlink" title="1.未授权信息泄露"></a>1.未授权信息泄露</h3><p>几乎所有的向 <code>lighttpd.cgi</code>发送的调用函数请求都可以未授权访问，包括 <code>setmanpwd</code>（篡改路由器登录界面密码）、<code>getmanpwd</code>（获取路由器当前登录密码）、<code>getrouterinfo</code>（获取路由信息）、<code>set_remote_manage</code>（开启远程web访问）等等。攻击者只需控制请求中 <code>type</code>字段的函数名称和其他字段便可达成攻击，所有POC均会放在 <code>/POC</code>文件夹中。</p>
+<h4 id="篡改路由器登录界面密码"><a href="#篡改路由器登录界面密码" class="headerlink" title="篡改路由器登录界面密码"></a>篡改路由器登录界面密码</h4><p><img src="/image/CNVD-2025-10286/1743735892380.png" alt="1743735892380"></p>
+<h4 id="获取路由器当前登录密码"><a href="#获取路由器当前登录密码" class="headerlink" title="获取路由器当前登录密码"></a>获取路由器当前登录密码</h4><p><img src="/image/CNVD-2025-10286/1743735978950.png" alt="1743735978950"></p>
+<h4 id="获取路由信息"><a href="#获取路由信息" class="headerlink" title="获取路由信息"></a>获取路由信息</h4><p><img src="/image/CNVD-2025-10286/1743750266465.png" alt="1743750266465"></p>
+<h4 id="开启远程web访问"><a href="#开启远程web访问" class="headerlink" title="开启远程web访问"></a>开启远程web访问</h4><p><img src="/image/CNVD-2025-10286/1743736258710.png" alt="1743736258710"></p>
+<p><img src="/image/CNVD-2025-10286/1743736252997.png" alt="1743736252997"></p>
+<h3 id="2-未授权远程命令执行（命令注入）"><a href="#2-未授权远程命令执行（命令注入）" class="headerlink" title="2.未授权远程命令执行（命令注入）"></a>2.未授权远程命令执行（命令注入）</h3><p>在 <code>libblinkapi.so</code>的 <code>bs_setmanpwd</code>函数中存在命令注入漏洞，从而可以远程命令执行，获取路由器最高权限。</p>
+<p><img src="/image/CNVD-2025-10286/1743736897631.png" alt="1743736897631"></p>
+<h2 id="二、漏洞成因"><a href="#二、漏洞成因" class="headerlink" title="二、漏洞成因"></a>二、漏洞成因</h2><h3 id="1-认证绕过"><a href="#1-认证绕过" class="headerlink" title="1.认证绕过"></a>1.认证绕过</h3><p>在 <code>/etc/lighttpd/lighttpd.conf</code>中，请求的 URL 以 <code>/cgi-bin</code> 开头时，不管文件扩展名是什么，都当作 CGI 脚本并使用系统默认解释器执行。</p>
+<p><img src="/image/CNVD-2025-10286/1743750283666.png" alt="1743750283666"></p>
+<p>在 <code>/www/cgi-bin/lighttpd.cgi</code>的 <code>main</code>函数中，会先执行 <code>check_auth</code>函数检查请求中 <code>Authorization</code>字段，再进入 <code>share_func</code>函数。</p>
+<p><img src="/image/CNVD-2025-10286/1743750298212.png" alt="1743750298212"></p>
+<p>在 <code>/usr/lib/libblinkapi.so</code>的 <code>check_auth</code>函数中，错误的使用 <code>strstr</code>函数进行鉴权，攻击者只需使用 <code>/tmp/token</code> 中存在的一个字符，并设置在请求的 <code>Authorization</code>字段中便可进行绕过， <code>v1</code>为用户登录过后留下的 <code>token</code>，保存在 <code>/tmp/token</code>中，a1是攻击者请求中 <code>Authorization</code>字段。<code>share_fuc</code>会处理请求的内容将type字段的函数名交给其他函数进行处理。</p>
+<p>（下面IDA反编译代码经过自写的脚本进行重命名，脚本会防止在 <code>/origin_file</code>文件夹下）</p>
+<p><img src="/image/CNVD-2025-10286/1743750308254.png" alt="1743750308254"></p>
+<h3 id="2-命令注入"><a href="#2-命令注入" class="headerlink" title="2.命令注入"></a>2.命令注入</h3><p>在 <code>/usr/lib/libblinkapi.so</code>的bs_SetManPwd函数中</p>
+<p><code>v39</code>是经过前面处理得到的routepwd中的字符串，通过 <code>snprintf</code>拼接成 <code>chpasswd.sh root v39</code>的形式，然后直接执行 <code>system</code>。请求中的 <code>routepwd</code>类的值并未经过校验（校验功能经测试在前端）。</p>
+<p><img src="/image/CNVD-2025-10286/1743750334483.png" alt="1743750334483"></p>
+<p>通过对反编译代码的分析，攻击者的请求中需包含 <code>“cfg_type”</code>类（即反编译代码中v9）方能进入system所在的if分支。</p>
+<p>（部分反编译代码如下，同样经过脚本进行重命名）</p>
+<p>image<img src="/image/CNVD-2025-10286/1743750426122.png" alt="1743750426122"></p>
+<p><img src="/image/CNVD-2025-10286/1743750379015.png" alt="1743750379015"></p>
+<h2 id="三、详细过程"><a href="#三、详细过程" class="headerlink" title="三、详细过程"></a>三、详细过程</h2><p><a target="_blank" rel="noopener" href="https://github.com/Exploo0Osion/LB-Link_unauth">https://github.com/Exploo0Osion/LB-Link_unauth</a></p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%9A%E6%AC%BELB-LINK%E8%B7%AF%E7%94%B1%E5%99%A8%E5%AD%98%E5%9C%A8%E6%9C%AA%E6%8E%88%E6%9D%83%E8%AE%BF%E9%97%AE%E6%BC%8F%E6%B4%9E"><span class="toc-number">1.</span> <span class="toc-text">多款LB-LINK路由器存在未授权访问漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%BC%8F%E6%B4%9E%E8%A1%8D%E7%94%9F%E7%9A%84%E5%8D%B1%E5%AE%B3"><span class="toc-number">1.1.</span> <span class="toc-text">一、漏洞衍生的危害</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%9C%AA%E6%8E%88%E6%9D%83%E4%BF%A1%E6%81%AF%E6%B3%84%E9%9C%B2"><span class="toc-number">1.1.1.</span> <span class="toc-text">1.未授权信息泄露</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AF%A1%E6%94%B9%E8%B7%AF%E7%94%B1%E5%99%A8%E7%99%BB%E5%BD%95%E7%95%8C%E9%9D%A2%E5%AF%86%E7%A0%81"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">篡改路由器登录界面密码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%B7%AF%E7%94%B1%E5%99%A8%E5%BD%93%E5%89%8D%E7%99%BB%E5%BD%95%E5%AF%86%E7%A0%81"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">获取路由器当前登录密码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%B7%AF%E7%94%B1%E4%BF%A1%E6%81%AF"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">获取路由信息</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%80%E5%90%AF%E8%BF%9C%E7%A8%8Bweb%E8%AE%BF%E9%97%AE"><span class="toc-number">1.1.1.4.</span> <span class="toc-text">开启远程web访问</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%9C%AA%E6%8E%88%E6%9D%83%E8%BF%9C%E7%A8%8B%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%EF%BC%88%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%EF%BC%89"><span class="toc-number">1.1.2.</span> <span class="toc-text">2.未授权远程命令执行（命令注入）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%BC%8F%E6%B4%9E%E6%88%90%E5%9B%A0"><span class="toc-number">1.2.</span> <span class="toc-text">二、漏洞成因</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E8%AE%A4%E8%AF%81%E7%BB%95%E8%BF%87"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.认证绕过</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.命令注入</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E8%AF%A6%E7%BB%86%E8%BF%87%E7%A8%8B"><span class="toc-number">1.3.</span> <span class="toc-text">三、详细过程</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&text=CNVD-2025-10286"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&is_video=false&description=CNVD-2025-10286"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=CNVD-2025-10286&body=Check out this article: https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&title=CNVD-2025-10286"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&name=CNVD-2025-10286&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/04/04/2025-04-4-CNVD-2025-10286/&t=CNVD-2025-10286"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

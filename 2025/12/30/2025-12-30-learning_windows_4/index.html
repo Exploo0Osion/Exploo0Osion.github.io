@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="windowsbasic knowledgex86下R3-&gt;R0int 2eCPU获取 IDT 的基地址，计算目标描述符地址：IDT Base + (0x2e * 8) 进行特权级检查：CPL &lt;&#x3D; DPL  CPL (Current Privilege Level) ：当前代码段（CS）的特权级（Ring 3）。 DPL (Descriptor Privilege Le">
+<meta property="og:type" content="article">
+<meta property="og:title" content="windows 学习（四）--被忽略的Basic Knowledge">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="windowsbasic knowledgex86下R3-&gt;R0int 2eCPU获取 IDT 的基地址，计算目标描述符地址：IDT Base + (0x2e * 8) 进行特权级检查：CPL &lt;&#x3D; DPL  CPL (Current Privilege Level) ：当前代码段（CS）的特权级（Ring 3）。 DPL (Descriptor Privilege Le">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-30-learning_windows_4/1767091367705.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-30-learning_windows_4/1767171485680.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-30-learning_windows_4/1767171602190.png">
+<meta property="article:published_time" content="2025-12-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T08:05:27.527Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-12-30-learning_windows_4/1767091367705.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>windows 学习（四）--被忽略的Basic Knowledge</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2025/12/30/2025-12-31-leaning_windows_5/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&text=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&is_video=false&description=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（四）--被忽略的Basic Knowledge&body=Check out this article: https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&name=windows 学习（四）--被忽略的Basic Knowledge&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&t=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#basic-knowledge"><span class="toc-number">1.1.</span> <span class="toc-text">basic knowledge</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#x86%E4%B8%8BR3-R0"><span class="toc-number">1.1.1.</span> <span class="toc-text">x86下R3-&gt;R0</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#int-2e"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">int 2e</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sysenter-sysreturn"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">sysenter &#x2F; sysreturn</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#KiFastCallEntry%E7%9A%84%E5%87%BD%E6%95%B0%E6%B5%81%E7%A8%8B"><span class="toc-number">1.1.1.2.1.</span> <span class="toc-text">KiFastCallEntry的函数流程</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#GDT%E7%B4%A2%E5%BC%95%E8%A1%A8%EF%BC%9A%E5%85%A8%E5%B1%80%E6%8F%8F%E8%BF%B0%E8%A1%A8%EF%BC%88Global-Description-Table%EF%BC%89"><span class="toc-number">1.1.1.2.1.1.</span> <span class="toc-text">GDT索引表：全局描述表（Global Description Table）</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.1.1.2.1.2.</span> <span class="toc-text">段寄存器</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x86%E4%B8%8BR0-R3"><span class="toc-number">1.1.2.</span> <span class="toc-text">x86下R0-&gt;R3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x64%E9%A1%B5%E8%A1%A8%E8%87%AA%E6%98%A0%E5%B0%84"><span class="toc-number">1.1.3.</span> <span class="toc-text">x64页表自映射</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        windows 学习（四）--被忽略的Basic Knowledge
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-12-29T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-12-30</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="windows"><a href="#windows" class="headerlink" title="windows"></a>windows</h1><h2 id="basic-knowledge"><a href="#basic-knowledge" class="headerlink" title="basic knowledge"></a>basic knowledge</h2><h3 id="x86下R3-R0"><a href="#x86下R3-R0" class="headerlink" title="x86下R3-&gt;R0"></a>x86下R3-&gt;R0</h3><h4 id="int-2e"><a href="#int-2e" class="headerlink" title="int 2e"></a>int 2e</h4><p>CPU获取 IDT 的基地址，计算目标描述符地址：<code>IDT Base + (0x2e * 8)</code></p>
+<p>进行特权级检查：CPL &lt;&#x3D; DPL</p>
+<ul>
+<li>CPL (Current Privilege Level) ：当前代码段（CS）的特权级（Ring 3）。</li>
+<li>DPL (Descriptor Privilege Level) ：IDT 描述符中规定的特权级（必须是 3，否则用户态无权调用）</li>
+</ul>
+<p>从 IDT 描述符中提取段选择子 Segment Selector 。CPU 使用该 Selector 去查询 GDT</p>
+<p>用户线程栈切换成内核线程栈，保存上下文 (Push Context，会压入一些寄存器)，从IDT（Interrupt Descriptor Table）中寻找0x2e对应的异常处理函数（KiSystemService）进入内核代码空间</p>
+<h4 id="sysenter-sysreturn"><a href="#sysenter-sysreturn" class="headerlink" title="sysenter &#x2F; sysreturn"></a>sysenter &#x2F; sysreturn</h4><p>sysenter指令执行时会跳转到MSR[176]指向的函数地址（该函数实际是KiFastCallEntry），CS、SS、EIP、ESP均来自MSR寄存器，因此速度上比int 2e块（不需要压参数、读内存）</p>
+<p>CS &lt;&#x3D;&#x3D; <code>IA32_SYSENTER_CS</code> (MSR 0x174)。</p>
+<p>EIP &lt;&#x3D;&#x3D; <code>IA32_SYSENTER_EIP</code> (MSR 0x176)。</p>
+<p>ESP &lt;&#x3D;&#x3D; <code>IA32_SYSENTER_ESP</code> (MSR 0x175)。</p>
+<h5 id="KiFastCallEntry的函数流程"><a href="#KiFastCallEntry的函数流程" class="headerlink" title="KiFastCallEntry的函数流程"></a>KiFastCallEntry的函数流程</h5><p> <code>push 30h</code> &#x2F; <code>pop fs</code> FS 寄存器从用户态的  TEB 切换到内核态的 KPCR</p>
+<p>0x30的二进制 ：<code>0000 0000 0011 0000</code></p>
+<p>x86 段选择子的结构：</p>
+<ul>
+<li>RPL (最后2位) : <code>00</code> -&gt; Ring 0 (特权级 0，即内核态)。</li>
+<li>TI (第3位) : <code>0</code> -&gt; GDT (全局描述符表)。</li>
+<li>Index (高13位) : <code>0000000000110</code> -&gt; 6 (十进制)。</li>
+</ul>
+<h6 id="GDT索引表：全局描述表（Global-Description-Table）"><a href="#GDT索引表：全局描述表（Global-Description-Table）" class="headerlink" title="GDT索引表：全局描述表（Global Description Table）"></a>GDT索引表：全局描述表（Global Description Table）</h6><p>在 x86 保护模式 (Protected Mode) 下，内存不再是直接通过物理地址访问，而是通过 “分段 (Segmentation)” 机制访问。</p>
+<ol>
+<li>不直接给地址 ：当程序执行 <code>mov eax, [0x12345678]</code> 时，CPU 并不是直接去物理内存的 <code>0x12345678</code> 拿数据。</li>
+<li>段选择子 (Selector) ：CPU 会先看当前段寄存器（如 <code>DS</code>、<code>CS</code>、<code>SS</code>）里存的  “索引号” （即选择子）。</li>
+<li>查表 (Lookup) ：CPU 根据这个索引号，去 GDT 表里找到对应的  “段描述符 (Descriptor)” 。</li>
+<li>鉴权与定位 ：描述符里记录了这段内存的  基地址 (Base) 、大小 (Limit) 和  权限 (Access Rights) 。只有检查通过，CPU 才会把 基地址 + 偏移量 算出线性地址。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>索引 (Index)</th>
+<th>选择子 (Selector)</th>
+<th>名称</th>
+<th>DPL (特权级)</th>
+<th>用途与特征</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>0x00</td>
+<td>NULL</td>
+<td>-</td>
+<td>空描述符 。硬件规定，不可使用。</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0x08</td>
+<td>KGDT_R0_CODE</td>
+<td>0 (内核)</td>
+<td>内核代码段 。Base&#x3D;0, Limit&#x3D;4GB。内核执行代码时 CS&#x3D;0x08。</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0x10</td>
+<td>KGDT_R0_DATA</td>
+<td>0 (内核)</td>
+<td>内核数据段 。Base&#x3D;0, Limit&#x3D;4GB。内核读写数据时 DS&#x2F;ES&#x2F;SS&#x3D;0x10。</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0x1B</td>
+<td>KGDT_R3_CODE</td>
+<td>3 (用户)</td>
+<td>用户代码段 。Base&#x3D;0, Limit&#x3D;4GB。用户程序运行时 CS&#x3D;0x1B (0x18</td>
+</tr>
+<tr>
+<td>4</td>
+<td>0x23</td>
+<td>KGDT_R3_DATA</td>
+<td>3 (用户)</td>
+<td>用户数据段 。Base&#x3D;0, Limit&#x3D;4GB。用户程序运行时 DS&#x2F;ES&#x2F;SS&#x3D;0x23 (0x20</td>
+</tr>
+<tr>
+<td>5</td>
+<td>0x28</td>
+<td>KGDT_TSS</td>
+<td>0 (内核)</td>
+<td>TSS (任务状态段) 。用于保存硬件上下文和栈切换信息 (ESP0)。</td>
+</tr>
+<tr>
+<td>6</td>
+<td>0x30</td>
+<td>KGDT_R0_PCR</td>
+<td>0 (内核)</td>
+<td>内核 KPCR 指针 。 这是唯一的非平坦段 。Base&#x3D;KPCR地址。内核通过 FS 访问 CPU 专属数据。</td>
+</tr>
+<tr>
+<td>7</td>
+<td>0x3B</td>
+<td>KGDT_R3_TEB</td>
+<td>3 (用户)</td>
+<td>用户 TEB 指针 。Base&#x3D;当前线程TEB地址。用户通过 FS 访问线程局部存储。</td>
+</tr>
+<tr>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>…</td>
+<td>(其他保留项，如 LDT, VDM 等)</td>
+</tr>
+</tbody></table>
+<p>LDT：局部描述表（Local Description Table），与GDT功能一致，但不能单独存在，只能嵌套在GDT中。</p>
+<h6 id="段寄存器"><a href="#段寄存器" class="headerlink" title="段寄存器"></a>段寄存器</h6><p>CS (Code Segment) —— 必须指向代码</p>
+<p>CPU 的取指单元（Instruction Fetch Unit）永远只从 <code>CS:EIP</code>（或 <code>CS:RIP</code>）指向的地址读取指令。CS 寄存器的低 2 位（CPL）代表了当前 CPU 的特权级（Ring 0 - Ring 3）。CS 指向 Ring 0 代码段 (0x08) 或 Ring 3 代码段 (0x1B)。</p>
+<p>SS (Stack Segment) —— 必须指向堆栈</p>
+<p>所有的隐式堆栈操作（如 <code>push</code>, <code>pop</code>, <code>call</code>, <code>ret</code>, <code>enter</code>, <code>leave</code>）以及基于 <code>ESP</code>&#x2F;<code>EBP</code> 的内存访问，默认使用 SS 段。SS 指向内核栈段 (0x10) 或用户栈段 (0x23)。</p>
+<p>DS (Data Segment) &amp; ES (Extra Segment)</p>
+<p>DS 是数据访问的默认段（例如 <code>mov eax, [ebx]</code> 默认就是 <code>ds:[ebx]</code>）。ES 是字符串指令（如 <code>movs</code>, <code>stos</code>）的目标段默认值。</p>
+<p>FS &amp; GS (F-Segment &#x2F; G-Segment)</p>
+<table>
+<thead>
+<tr>
+<th>架构</th>
+<th>FS 寄存器用途</th>
+<th>GS 寄存器用途</th>
+<th>为什么不同？</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>x86 (32位)</td>
+<td>指向 TEB (R3) &#x2F; KPCR (R0)</td>
+<td>未大量使用 (通常为0)</td>
+<td>x86下 FS 选择子很早就被分配给了 TEB&#x2F;PCR。</td>
+</tr>
+<tr>
+<td>x64 (64位)</td>
+<td>(兼容性保留，指向 32位TEB)</td>
+<td>指向 TEB (R3) &#x2F; KPCR (R0)</td>
+<td>x64下 CPU 允许 <code>swapgs</code>快速切换 GS，所以主要用 GS。</td>
+</tr>
+</tbody></table>
+<p>fs:[0]：在3环时，该处指向的是TEB结构，0环下指向_KPCR结构</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">KPCR</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">NT_TIB</span> <span class="title">NtTib</span>;</span>                                               <span class="comment">//0x0</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">        &#123;</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">EXCEPTION_REGISTRATION_RECORD</span>* <span class="title">Used_ExceptionList</span>;</span>      <span class="comment">//0x0</span></span><br><span class="line">            VOID* Used_StackBase;                                           <span class="comment">//0x4</span></span><br><span class="line">            VOID* Spare2;                                                   <span class="comment">//0x8</span></span><br><span class="line">            VOID* TssCopy;                                                  <span class="comment">//0xc</span></span><br><span class="line">            ULONG ContextSwitches;                                          <span class="comment">//0x10</span></span><br><span class="line">            ULONG SetMemberCopy;                                            <span class="comment">//0x14</span></span><br><span class="line">            VOID* Used_Self;                                                <span class="comment">//0x18</span></span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KPCR</span>* <span class="title">SelfPcr</span>;</span>                                                  <span class="comment">//0x1c</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KPRCB</span>* <span class="title">Prcb</span>;</span>                                                    <span class="comment">//0x20</span></span><br><span class="line">    UCHAR Irql;                                                             <span class="comment">//0x24</span></span><br><span class="line">    ULONG IRR;                                                              <span class="comment">//0x28</span></span><br><span class="line">    ULONG IrrActive;                                                        <span class="comment">//0x2c</span></span><br><span class="line">    ULONG IDR;                                                              <span class="comment">//0x30</span></span><br><span class="line">    VOID* KdVersionBlock;                                                   <span class="comment">//0x34</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KIDTENTRY</span>* <span class="title">IDT</span>;</span>                                                 <span class="comment">//0x38</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KGDTENTRY</span>* <span class="title">GDT</span>;</span>                                                 <span class="comment">//0x3c</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KTSS</span>* <span class="title">TSS</span>;</span>                                                      <span class="comment">//0x40</span></span><br><span class="line">    USHORT MajorVersion;                                                    <span class="comment">//0x44</span></span><br><span class="line">    USHORT MinorVersion;                                                    <span class="comment">//0x46</span></span><br><span class="line">    ULONG SetMember;                                                        <span class="comment">//0x48</span></span><br><span class="line">    ULONG StallScaleFactor;                                                 <span class="comment">//0x4c</span></span><br><span class="line">    UCHAR SpareUnused;                                                      <span class="comment">//0x50</span></span><br><span class="line">    UCHAR Number;                                                           <span class="comment">//0x51</span></span><br><span class="line">    UCHAR Spare0;                                                           <span class="comment">//0x52</span></span><br><span class="line">    UCHAR SecondLevelCacheAssociativity;                                    <span class="comment">//0x53</span></span><br><span class="line">    ULONG VdmAlert;                                                         <span class="comment">//0x54</span></span><br><span class="line">    ULONG KernelReserved[<span class="number">14</span>];                                               <span class="comment">//0x58</span></span><br><span class="line">    ULONG SecondLevelCacheSize;                                             <span class="comment">//0x90</span></span><br><span class="line">    ULONG HalReserved[<span class="number">16</span>];                                                  <span class="comment">//0x94</span></span><br><span class="line">    ULONG InterruptMode;                                                    <span class="comment">//0xd4</span></span><br><span class="line">    UCHAR Spare1;                                                           <span class="comment">//0xd8</span></span><br><span class="line">    ULONG KernelReserved2[<span class="number">17</span>];                                              <span class="comment">//0xdc</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">KPRCB</span> <span class="title">PrcbData</span>;</span>                                                 <span class="comment">//0x120</span></span><br><span class="line">&#125;; </span><br></pre></td></tr></table></figure>
+
+<p> <code>mov ecx, fs:_KPCR.TSS</code>：通过 FS (KPCR) 获取当前任务状态段 (TSS)。</p>
+<p><code>mov esp, [ecx+_KTSS.Esp0]</code>：栈指针切换到该线程真正的内核栈顶</p>
+<p>后续是根据 <code>KTrap_Frame</code>的结构构建完整 <code>Trap Frame</code> 与异常链表，需要注意的是用户态的 <code>esp</code>是通过 <code>push edx</code>来压入的，因为 <code>sysenter</code>被封装成了 <code>KiFastSystemCall</code>函数，会先进行 <code>mov edx,esp;</code>然后再 <code>sysenter</code>，eip则是 <code>_KUSER_SHARED_DATA</code>中的 <code>SystemCallReturn</code> 地址</p>
+<p><code>mov ebx, large fs:KPCR.SelfPcr</code>：获取 PCR 指针，<code>push dword ptr [ebx]</code>：保存当前的异常处理链表头 (<code>PCR.ExceptionList</code>) 到栈</p>
+<p>最后保存到_KTHREAD.TrapFrame中</p>
+<p>KTrap_Frame：栈帧，用来保存R3切换到R0的环境</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//0x8c bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">KTRAP_FRAME</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    ULONG DbgEbp;                                                           <span class="comment">//0x0</span></span><br><span class="line">    ULONG DbgEip;                                                           <span class="comment">//0x4</span></span><br><span class="line">    ULONG DbgArgMark;                                                       <span class="comment">//0x8</span></span><br><span class="line">    ULONG DbgArgPointer;                                                    <span class="comment">//0xc</span></span><br><span class="line">    USHORT TempSegCs;                                                       <span class="comment">//0x10</span></span><br><span class="line">    UCHAR Logging;                                                          <span class="comment">//0x12</span></span><br><span class="line">    UCHAR Reserved;                                                         <span class="comment">//0x13</span></span><br><span class="line">    ULONG TempEsp;                                                          <span class="comment">//0x14</span></span><br><span class="line">    ULONG Dr0;                                                              <span class="comment">//0x18</span></span><br><span class="line">    ULONG Dr1;                                                              <span class="comment">//0x1c</span></span><br><span class="line">    ULONG Dr2;                                                              <span class="comment">//0x20</span></span><br><span class="line">    ULONG Dr3;                                                              <span class="comment">//0x24</span></span><br><span class="line">    ULONG Dr6;                                                              <span class="comment">//0x28</span></span><br><span class="line">    ULONG Dr7;                                                              <span class="comment">//0x2c</span></span><br><span class="line">    ULONG SegGs;                                                            <span class="comment">//0x30</span></span><br><span class="line">    ULONG SegEs;                                                            <span class="comment">//0x34</span></span><br><span class="line">    ULONG SegDs;                                                            <span class="comment">//0x38</span></span><br><span class="line">    ULONG Edx;                                                              <span class="comment">//0x3c</span></span><br><span class="line">    ULONG Ecx;                                                              <span class="comment">//0x40</span></span><br><span class="line">    ULONG Eax;                                                              <span class="comment">//0x44</span></span><br><span class="line">    ULONG PreviousPreviousMode;                                             <span class="comment">//0x48-----R0用</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">EXCEPTION_REGISTRATION_RECORD</span>* <span class="title">ExceptionList</span>;</span>                   <span class="comment">//0x4c</span></span><br><span class="line">    ULONG SegFs;                                                            <span class="comment">//0x50</span></span><br><span class="line">    ULONG Edi;                                                              <span class="comment">//0x54</span></span><br><span class="line">    ULONG Esi;                                                              <span class="comment">//0x58</span></span><br><span class="line">    ULONG Ebx;                                                              <span class="comment">//0x5c</span></span><br><span class="line">    ULONG Ebp;                                                              <span class="comment">//0x60</span></span><br><span class="line">    ULONG ErrCode;                                                          <span class="comment">//0x64</span></span><br><span class="line">    ULONG Eip;                                                              <span class="comment">//0x68</span></span><br><span class="line">    ULONG SegCs;                                                            <span class="comment">//0x6c </span></span><br><span class="line">    ULONG EFlags;                                                           <span class="comment">//0x70-----R3用</span></span><br><span class="line">    ULONG HardwareEsp;                                                      <span class="comment">//0x74 </span></span><br><span class="line">    ULONG HardwareSegSs;                                                    <span class="comment">//0x78</span></span><br><span class="line">    ULONG V86Es;                                                            <span class="comment">//0x7c	虚拟8086模式下，保护模式下不用</span></span><br><span class="line">    ULONG V86Ds;                                                            <span class="comment">//0x80</span></span><br><span class="line">    ULONG V86Fs;                                                            <span class="comment">//0x84</span></span><br><span class="line">    ULONG V86Gs;                                                            <span class="comment">//0x88</span></span><br><span class="line">&#125;; </span><br></pre></td></tr></table></figure>
+
+<p>确定系统服务表（SSDT vs Shadow SSDT）</p>
+<p><code>mov edi, eax</code> &#x2F; <code>shr edi, 8</code> &#x2F; <code>and edi, 10h</code></p>
+<p>Windows 系统调用号第 12 位（bit 12）用于区分表。</p>
+<ul>
+<li>如果 ID &lt; 0x1000，<code>edi</code> 结果为 0 -&gt; 使用 KeServiceDescriptorTable (核心内核函数)。</li>
+<li>如果 ID &gt;&#x3D; 0x1000 (如 0x1xxx)，<code>edi</code> 结果为 0x10 -&gt; 使用 KeServiceDescriptorTableShadow (win32k.sys 图形&#x2F;窗口函数)。</li>
+</ul>
+<p><code>add edi, [esi+_KTHREAD.ServiceTable]</code> _KTHREAD中有服务表的基址，现在edi指向了正确的 Service Descriptor Table 结构体</p>
+<p>获取 SSDT 参数表 (Argument Table) 的基址，获取 SSDT 函数地址表 (Service Table) 的基址。</p>
+<p>从参数表中读取该系统调用需要的参数字节数 ，从函数表中读取目标内核函数地址 —-计算公式：表基址 + (调用号 * 4)。</p>
+<p>通过 <code>rep movsd</code>从用户态堆栈完整拷贝到内核态堆栈（此时ECX–参数个数；ESI–由EDX赋予，EDX在sysenter前就指向old esp；   EDI–内核栈地址），最后 <code>call ebx</code>调用内核函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">KSERVICE_TABLKSERVICE_TABLE_DESCRIPTORE_DESCRIPTOR</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    PULONG_PTR FuncPoint;	<span class="comment">//指向函数表</span></span><br><span class="line">    PULONG Count;			<span class="comment">//调用的次数</span></span><br><span class="line">    PULONG Limit;			<span class="comment">//函数个数</span></span><br><span class="line">    PUCHAR ArgsPoint;		<span class="comment">//参数列表</span></span><br><span class="line">&#125;KSERVICE_TABLE_DESCRIPTOR, *PKSERVICE_TABLE_DESCRIPTOR;</span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NUMBER_SERVICE_TABLES 2</span></span><br><span class="line"> </span><br><span class="line">KSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTable[NUMBER_SERVICE_TABLES]</span><br><span class="line">KSERVICE_TABLE_DESCRIPTOR KeServiceDescriptorTableShadow[NUMBER_SERVICE_TABLES]</span><br></pre></td></tr></table></figure>
+
+<p><img src="/image/2025-12-30-learning_windows_4/1767091367705.png" alt="1767091367705"></p>
+<p>x64下 <code>syscall</code>似乎和x86下的 <code>sysenter</code>差不多，跳转的内核函数是 <code>KiSystemCall64</code></p>
+<h3 id="x86下R0-R3"><a href="#x86下R0-R3" class="headerlink" title="x86下R0-&gt;R3"></a>x86下R0-&gt;R3</h3><p>处理APC：代码读取 <code>KPCR-&gt;CurrentThread</code> (<code>fs:124h</code>)</p>
+<p>检查 <code>Thread-&gt;ApcState.UserApcPending</code>，如果有用户态的 APC（比如某些 I&#x2F;O 完成回调、线程挂起请求）， 需要先处理掉（APC注入的发生点）<code>call _KiDeliverApc</code>直到所有挂起的 APC都执行完毕。</p>
+<p>恢复异常链表及调试寄存器（如果为调试模式的话）：从 TrapFrame 中取出用户态的 <code>ExceptionList</code>，写回 <code>fs:[0]</code> (KPCR的第一个成员指向TEB )，</p>
+<p>检查 <code>TrapFrame-&gt;Dr7</code>。如果用户态程序下了硬件断点（Hardware Breakpoint），这里需要恢复调试寄存器 <code>DR0</code>-<code>DR7</code>。</p>
+<p>恢复通用寄存器与栈调整，将ESP移动到TrapFrame-&gt;SegFs，<code>pop fs</code>恢复3环FS，再移动esp恢复各个通用寄存器，执行iret返回用户态自动从栈上弹出 EIP, CS, EFLAGS, ESP, SS</p>
+<h3 id="x64页表自映射"><a href="#x64页表自映射" class="headerlink" title="x64页表自映射"></a>x64页表自映射</h3><p>x64 使用 4 级页表（PML4, PDPT, PDE, PTE）</p>
+<p>当内核需要修改某个虚拟地址（比如 <code>0x12345678</code>）对应的 PTE（页表项）属性时，它不能直接去写物理内存。它必须先把存放这个 PTE 的物理页映射到一个虚拟地址上，才能通过 CPU指令（如 <code>mov</code>）去修改它。</p>
+<p>如果没有自映射，内核每次修改页表都需要临时分配虚拟地址、映射物理页、修改、解除映射，这非常繁琐且低效。</p>
+<p><img src="/image/2025-12-30-learning_windows_4/1767171485680.png" alt="1767171485680"></p>
+<p>使用windbg命令 <code>!pte</code>查看 <code>0</code>地址数据</p>
+<p>对pml4、pdpt、pde、pte四项的页表基址进行拆分得到如下（去除 <code>页内偏移</code>和 <code>高16位</code>）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pte_base：   111010111 000000000 000000000 000000000（FEB8000000）</span><br><span class="line">pde_base：   111010111 111010111 000000000 000000000（FEBF5C0000）</span><br><span class="line">pdpte_base： 111010111 111010111 111010111 000000000（FEBF5FAE00）</span><br><span class="line">pml4_base：  111010111 111010111 111010111 111010111（FEBF5FAFD7）</span><br></pre></td></tr></table></figure>
+
+<p><img src="/image/2025-12-30-learning_windows_4/1767171602190.png" alt="1767171602190"></p>
+<p>CPU是如何找到一个虚拟地址的物理地址的：</p>
+<p>CPU先从CR3寄存器读取到PML4表的物理地址，从cr3+虚拟地址的最高9位 * 8处获得PDPT的物理地址，然后这个地址+虚拟地址的次高9位 * 8获得的地址是PDE的物理地址，以此类推从PTE上获取物理页帧号，物理地址&#x3D; <code>(PFN &lt;&lt; 12) + Offset(0x000)</code> 最后去内存条里找到数据</p>
+<p>但如果是查找PTE表的物理地址呢？这里就和虚表自映射有关了，在cr3+PTE表虚拟地址最高9位*8处获得的地址其实是PML4的地址</p>
+<p>在windbg上通过!pte命令获得的地址，实际上CPU从这些虚拟地址访问到的物理地址就是他们本身，这也解释了这些虚拟地址为什么要这样设计。</p>
+<p>PTE表：在 x64 下，一个 PTE 是 64位（8字节）的，它里面存了物理地址和属性</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">1: kd&gt; dt nt!_MMPTE_HARDWARE</span><br><span class="line">   +0x000 Valid            : Pos 0, 1 Bit</span><br><span class="line">   +0x000 Dirty1           : Pos 1, 1 Bit</span><br><span class="line">   +0x000 Owner            : Pos 2, 1 Bit</span><br><span class="line">   +0x000 WriteThrough     : Pos 3, 1 Bit</span><br><span class="line">   +0x000 CacheDisable     : Pos 4, 1 Bit</span><br><span class="line">   +0x000 Accessed         : Pos 5, 1 Bit</span><br><span class="line">   +0x000 Dirty            : Pos 6, 1 Bit</span><br><span class="line">   +0x000 LargePage        : Pos 7, 1 Bit</span><br><span class="line">   +0x000 Global           : Pos 8, 1 Bit</span><br><span class="line">   +0x000 CopyOnWrite      : Pos 9, 1 Bit</span><br><span class="line">   +0x000 Unused           : Pos 10, 1 Bit</span><br><span class="line">   +0x000 Write            : Pos 11, 1 Bit</span><br><span class="line">   +0x000 PageFrameNumber  : Pos 12, 36 Bits</span><br><span class="line">   +0x000 ReservedForHardware : Pos 48, 4 Bits</span><br><span class="line">   +0x000 ReservedForSoftware : Pos 52, 4 Bits</span><br><span class="line">   +0x000 WsleAge          : Pos 56, 4 Bits</span><br><span class="line">   +0x000 WsleProtection   : Pos 60, 3 Bits</span><br><span class="line">   +0x000 NoExecute        : Pos 63, 1 Bit</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>位 (Bit)</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>63(最高位)</td>
+<td>NX (No-Execute)</td>
+<td>1&#x3D;禁止执行 , 0&#x3D;允许执行</td>
+</tr>
+<tr>
+<td>12-62</td>
+<td>PFN</td>
+<td>物理页帧号 (实际物理地址)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>U&#x2F;S (User&#x2F;Supervisor)</td>
+<td>0&#x3D;内核页, 1&#x3D;用户页</td>
+</tr>
+<tr>
+<td>1</td>
+<td>R&#x2F;W (Read&#x2F;Write)</td>
+<td>1&#x3D;可写, 0&#x3D;只读</td>
+</tr>
+<tr>
+<td>0</td>
+<td>P (Present)</td>
+<td>1&#x3D;页面有效 , 0&#x3D;无效</td>
+</tr>
+</tbody></table>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#basic-knowledge"><span class="toc-number">1.1.</span> <span class="toc-text">basic knowledge</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#x86%E4%B8%8BR3-R0"><span class="toc-number">1.1.1.</span> <span class="toc-text">x86下R3-&gt;R0</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#int-2e"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">int 2e</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sysenter-sysreturn"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">sysenter &#x2F; sysreturn</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#KiFastCallEntry%E7%9A%84%E5%87%BD%E6%95%B0%E6%B5%81%E7%A8%8B"><span class="toc-number">1.1.1.2.1.</span> <span class="toc-text">KiFastCallEntry的函数流程</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#GDT%E7%B4%A2%E5%BC%95%E8%A1%A8%EF%BC%9A%E5%85%A8%E5%B1%80%E6%8F%8F%E8%BF%B0%E8%A1%A8%EF%BC%88Global-Description-Table%EF%BC%89"><span class="toc-number">1.1.1.2.1.1.</span> <span class="toc-text">GDT索引表：全局描述表（Global Description Table）</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#%E6%AE%B5%E5%AF%84%E5%AD%98%E5%99%A8"><span class="toc-number">1.1.1.2.1.2.</span> <span class="toc-text">段寄存器</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x86%E4%B8%8BR0-R3"><span class="toc-number">1.1.2.</span> <span class="toc-text">x86下R0-&gt;R3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x64%E9%A1%B5%E8%A1%A8%E8%87%AA%E6%98%A0%E5%B0%84"><span class="toc-number">1.1.3.</span> <span class="toc-text">x64页表自映射</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&text=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&is_video=false&description=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（四）--被忽略的Basic Knowledge&body=Check out this article: https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&title=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&name=windows 学习（四）--被忽略的Basic Knowledge&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/30/2025-12-30-learning_windows_4/&t=windows 学习（四）--被忽略的Basic Knowledge"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

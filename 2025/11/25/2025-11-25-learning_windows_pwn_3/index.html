@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="windows查看ntdll的版本号:lm v m ntdll 123456789Information from resource tables:    CompanyName:      Microsoft Corporation    ProductName:      Microsoft® Windows® Operating System    InternalName:     n">
+<meta property="og:type" content="article">
+<meta property="og:title" content="windows 学习（三）">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="windows查看ntdll的版本号:lm v m ntdll 123456789Information from resource tables:    CompanyName:      Microsoft Corporation    ProductName:      Microsoft® Windows® Operating System    InternalName:     n">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101500542.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101531001.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101545166.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101557249.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101569247.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1764141194132.png">
+<meta property="article:published_time" content="2025-11-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T08:05:15.910Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-11-25-learning_windows_pwn_3/1765101500542.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>windows 学习（三）</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&text=windows 学习（三）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&is_video=false&description=windows 学习（三）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（三）&body=Check out this article: https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&name=windows 学习（三）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&t=windows 学习（三）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#NT-heap%E4%B8%8Bfree%E5%90%88%E5%B9%B6%E5%A0%86%E5%9D%97%E6%97%B6%E7%9A%84unlink"><span class="toc-number">1.1.</span> <span class="toc-text">NT heap下free合并堆块时的unlink</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#reuse-attack%EF%BC%88Nt-Heap-LFH-%E5%A0%86%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">reuse attack（Nt Heap LFH 堆）</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        windows 学习（三）
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-11-24T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-11-25</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="windows"><a href="#windows" class="headerlink" title="windows"></a>windows</h1><p>查看ntdll的版本号:<code>lm v m ntdll</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Information from resource tables:</span><br><span class="line">    CompanyName:      Microsoft Corporation</span><br><span class="line">    ProductName:      Microsoft® Windows® Operating System</span><br><span class="line">    InternalName:     ntdll.dll</span><br><span class="line">    OriginalFilename: ntdll.dll</span><br><span class="line">    ProductVersion:   10.0.22621.4541</span><br><span class="line">    FileVersion:      10.0.22621.4541 (WinBuild.160101.0800)</span><br><span class="line">    FileDescription:  NT Layer DLL</span><br><span class="line">    LegalCopyright:   © Microsoft Corporation. All rights reserved.</span><br></pre></td></tr></table></figure>
+
+<h2 id="NT-heap下free合并堆块时的unlink"><a href="#NT-heap下free合并堆块时的unlink" class="headerlink" title="NT heap下free合并堆块时的unlink"></a>NT heap下free合并堆块时的unlink</h2><p>函数调用链</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">用户 / API / CRT</span><br><span class="line">    ↓</span><br><span class="line">HeapFree / LocalFree / GlobalFree / free / new/delete 等</span><br><span class="line">    ↓</span><br><span class="line">RtlFreeHeap（ntdll）</span><br><span class="line">    ↓</span><br><span class="line">RtlpFreeHeapInternal</span><br><span class="line">    ↓</span><br><span class="line">具体堆后端（传统 NT Heap / 段式堆 / LFH / VS 等）</span><br></pre></td></tr></table></figure>
+
+<p>初始HEAP状态假设如下：</p>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1765101500542.png" alt="1765101500542"></p>
+<p>释放 <code>Q</code> -&gt; <code>ListHint</code> 指向 <code>Q</code>。</p>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1765101531001.png" alt="1765101531001"></p>
+<p>释放 <code>S</code> -&gt; <code>ListHint</code> 指向 <code>S</code>，<code>S-&gt;Flink</code> 指向 <code>Q</code>。利用 NT Heap 的 LIFO 特性，将 <code>Q</code> 从链表头部（Head）挤到第二个位置（Internal Node）。</p>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1765101545166.png" alt="1765101545166"></p>
+<p>利用溢出或 UAF 修改 <code>Q</code> 的 <code>_LIST_ENTRY</code>。</p>
+<ul>
+<li><code>Q-&gt;Flink = TargetAddr - Offset</code></li>
+<li><code>Q-&gt;Blink = TargetAddr</code></li>
+<li>TargetAddr上必须有Q的地址</li>
+</ul>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1765101557249.png" alt="1765101557249"></p>
+<p>触发合并 (Trigger Coalesce)</p>
+<ul>
+<li>操作 ：释放堆块 <code>P</code>（位于 <code>Q</code> 之前的相邻块）。</li>
+<li>逻辑 ：堆管理器发现 <code>P</code> 释放，且后向相邻块 <code>Q</code> 也是空闲的，决定将 <code>Q</code> 从 FreeList 中移除（Unlink）并与 <code>P</code> 合并。</li>
+<li>调用函数 ：<code>RtlpHeapRemoveListEntry(Q)</code></li>
+</ul>
+<p>在 <code>RtlpHeapRemoveListEntry</code> 函数内部，会按顺序进行以下检查：</p>
+<p>检查 A：Bucket 头部节点检查 (Head Check)</p>
+<ul>
+<li>逻辑 ：检查 <code>slot == Node</code>，即当前要移除的 <code>Q</code> 是否是 Bucket 的头部节点（ListHint 指向的节点）。</li>
+<li>情况 ：</li>
+<li>如果 <code>Q</code> 是头部：系统会尝试将 <code>Q-&gt;Flink</code>（我们伪造的攻击地址）作为新的 Bucket 头部写入堆元数据。这通常会导致堆元数据损坏或崩溃。</li>
+<li>当前情况 ：由于我们在第一步多释放了 <code>S</code>，<code>Q</code> 此时不是头部节点。</li>
+<li>结果 ： 绕过此检查 ，进入常规双向链表移除逻辑。</li>
+</ul>
+<p>检查 B：Safe Unlink 完整性检查</p>
+<ul>
+<li><p>逻辑 ：检查双向链表的一致性。</p>
+</li>
+<li><p>验证 <code>Q-&gt;Flink-&gt;Blink == Q</code></p>
+</li>
+<li><p>验证 <code>Q-&gt;Blink-&gt;Flink == Q</code></p>
+</li>
+<li><p>当前情况 ：</p>
+</li>
+<li><p><code>Q-&gt;Flink</code> 指向 <code>Target - Offset</code>，其 <code>Blink</code> 字段正好指向 <code>Q</code>。</p>
+</li>
+<li><p><code>Q-&gt;Blink</code> 指向 <code>Target</code>，其 <code>Flink</code> 字段正好指向 <code>Q</code>。</p>
+</li>
+<li><p>结果 ：堆管理器认为这是一个合法的链表节点。</p>
+</li>
+<li><p>检查通过后，执行链表移除操作：</p>
+<ul>
+<li><code>Q-&gt;Blink-&gt;Flink = Q-&gt;Flink</code>  &#x3D;&gt;  <code>*Target = Target - Offset</code></li>
+<li><code>Q-&gt;Flink-&gt;Blink = Q-&gt;Blink</code>  &#x3D;&gt;  <code>*(Target - Offset + 8) = Target</code></li>
+</ul>
+</li>
+</ul>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1765101569247.png" alt="1765101569247"></p>
+<p>善后与软性失败 (Soft Fail)</p>
+<ul>
+<li>操作 ：<code>P</code> 与 <code>Q</code> 合并成 <code>NewBlock</code>，系统尝试将其插入 FreeList。</li>
+<li>调用函数 ：<code>RtlpInsertFreeBlock(NewBlock)</code></li>
+</ul>
+<p>检查 ：插入时的一致性检查</p>
+<ul>
+<li>逻辑 ：在将 <code>NewBlock</code> 插入到相邻节点（例如 <code>A</code>）之前，检查 <code>A</code> 的反向指针是否正确。</li>
+<li>验证 <code>A-&gt;Blink-&gt;Flink == A</code>。</li>
+<li>当前情况 ：</li>
+<li><code>A-&gt;Blink</code> 依然指向旧的 <code>Q</code> 地址。</li>
+<li>但是 <code>Q</code> 的内容已经被我们在 Unlink 阶段修改了（或者 Q 现在已经是 NewBlock 的一部分，数据变了）。</li>
+<li><code>Q-&gt;Flink</code> 不再指向 <code>A</code>。</li>
+<li>结果 ： 检查失败 。</li>
+</ul>
+<p>后果：触发软性失败</p>
+<ul>
+<li>在 传统 NT Heap 中，这种检查失败调用的是 <code>RtlpLogHeapFailure</code>。</li>
+<li>它会记录错误，并 中断当前的插入操作 。</li>
+<li>但是，它不会终止进程 （Abort），这就是所谓的  Soft Fail 。</li>
+</ul>
+<h2 id="reuse-attack（Nt-Heap-LFH-堆）"><a href="#reuse-attack（Nt-Heap-LFH-堆）" class="headerlink" title="reuse attack（Nt Heap LFH 堆）"></a>reuse attack（Nt Heap LFH 堆）</h2><p>假设有一个 Use after free 的漏洞，但因为 LFH 的随机性，导致无法预测下一个 chunk 会在哪，使得很难进行堆布局。这时可以采用填充 <code>Userblock</code> 的方式，即先分配完所有的 LFH 堆块再 free 掉其中一块，那么下次分配的堆块一定与漏洞堆块是同一个堆块。</p>
+<p><img src="/image/2025-11-25-learning_windows_pwn_3/1764141194132.png" alt="1764141194132"></p>
+<p>PoC</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;Windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义分配次数，足够大以正好填满 LFH 的 UserBlock 并激活 LFH</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ALLOC_COUNT 175 </span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CHUNK_SIZE 0xF0 <span class="comment">// 0xF0 + 0x10 (Header) = 0x100 (256 bytes) Bucket</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 1. 创建一个私有堆，模拟干净的环境</span></span><br><span class="line">    HANDLE hHeap = HeapCreate(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (!hHeap) <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span>* chunks[ALLOC_COUNT] = &#123; <span class="literal">NULL</span> &#125;;</span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[*] Phase 1: Spraying chunks to activate LFH and fill UserBlocks...\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 堆喷射 (Heap Spraying) / 填充</span></span><br><span class="line">    <span class="comment">// 前 ~18 次分配会激活 LFH，后续分配会填充 UserBlock</span></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; ALLOC_COUNT; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        chunks[i] = HeapAlloc(hHeap, <span class="number">0</span>, CHUNK_SIZE);</span><br><span class="line">        <span class="comment">//printf(&quot;    Allocated chunks[%d]: %p\n&quot;, i, chunks[i]);</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[+] Allocated %d chunks. LFH should be active and Blocks filled.\n&quot;</span>, ALLOC_COUNT);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;----------------------------------------------------------------\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> victim_index = <span class="number">30</span>;</span><br><span class="line">    <span class="type">void</span>* victim_addr = chunks[victim_index];</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[*] Phase 2: Freeing one specific chunk (Index %d) at %p\n&quot;</span>, victim_index, victim_addr);</span><br><span class="line"></span><br><span class="line">    HeapFree(hHeap, <span class="number">0</span>, victim_addr);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[*] Phase 3: Allocating a new chunk of size 0x%X...\n&quot;</span>, CHUNK_SIZE);</span><br><span class="line"></span><br><span class="line">    <span class="type">void</span>* attacker_chunk = HeapAlloc(hHeap, <span class="number">0</span>, CHUNK_SIZE);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[+] Attacker chunk address: %p\n&quot;</span>, attacker_chunk);</span><br><span class="line">    HeapDestroy(hHeap);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[*] Phase 1: Spraying chunks to activate LFH and fill UserBlocks...</span><br><span class="line">[+] Allocated 175 chunks. LFH should be active and Blocks filled.</span><br><span class="line">----------------------------------------------------------------</span><br><span class="line">[*] Phase 2: Freeing one specific chunk (Index 30) at 000001C4BAAB4570</span><br><span class="line">[*] Phase 3: Allocating a new chunk of size 0xF0...</span><br><span class="line">[+] Attacker chunk address: 000001C4BAAB4570</span><br></pre></td></tr></table></figure>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#NT-heap%E4%B8%8Bfree%E5%90%88%E5%B9%B6%E5%A0%86%E5%9D%97%E6%97%B6%E7%9A%84unlink"><span class="toc-number">1.1.</span> <span class="toc-text">NT heap下free合并堆块时的unlink</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#reuse-attack%EF%BC%88Nt-Heap-LFH-%E5%A0%86%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">reuse attack（Nt Heap LFH 堆）</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&text=windows 学习（三）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&is_video=false&description=windows 学习（三）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（三）&body=Check out this article: https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&title=windows 学习（三）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&name=windows 学习（三）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/11/25/2025-11-25-learning_windows_pwn_3/&t=windows 学习（三）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

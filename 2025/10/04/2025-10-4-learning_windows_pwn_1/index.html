@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="windows函数调用约定x86   调用约定 定义 参数传递 栈平衡 特点 应用场景    __cdecl C语言默认调用约定 参数从右向左依次压入栈中 调用者(caller)负责清理栈空间 支持可变参数函数(VARARG)，因为调用者知道传递了多少参数 C&#x2F;C++程序中的普通函数默认使用此约定   __stdcall 标准调用约定 参数从右向左依次压入栈中 被调用函数(calle">
+<meta property="og:type" content="article">
+<meta property="og:title" content="windows 学习（一）">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="windows函数调用约定x86   调用约定 定义 参数传递 栈平衡 特点 应用场景    __cdecl C语言默认调用约定 参数从右向左依次压入栈中 调用者(caller)负责清理栈空间 支持可变参数函数(VARARG)，因为调用者知道传递了多少参数 C&#x2F;C++程序中的普通函数默认使用此约定   __stdcall 标准调用约定 参数从右向左依次压入栈中 被调用函数(calle">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759563374342.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759569034306.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759645034590.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759651314902.png">
+<meta property="article:published_time" content="2025-10-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T08:05:06.163Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759563374342.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>windows 学习（一）</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2025/10/03/2025-10-3-learning_linux_kernel_1/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&text=windows 学习（一）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&is_video=false&description=windows 学习（一）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&name=windows 学习（一）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&t=windows 学习（一）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%BA%A6%E5%AE%9A"><span class="toc-number">1.1.</span> <span class="toc-text">函数调用约定</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#x86"><span class="toc-number">1.1.1.</span> <span class="toc-text">x86</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x64"><span class="toc-number">1.1.2.</span> <span class="toc-text">x64</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81-dll"><span class="toc-number">1.2.</span> <span class="toc-text">常见 dll</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windbg%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4"><span class="toc-number">1.3.</span> <span class="toc-text">windbg调试命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.4.</span> <span class="toc-text">常见结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PEB"><span class="toc-number">1.4.1.</span> <span class="toc-text">PEB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TEB"><span class="toc-number">1.4.2.</span> <span class="toc-text">TEB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SEH"><span class="toc-number">1.4.3.</span> <span class="toc-text">SEH</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E4%BF%9D%E6%8A%A4"><span class="toc-number">1.5.</span> <span class="toc-text">常见保护</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DEP"><span class="toc-number">1.5.1.</span> <span class="toc-text">DEP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ASLR"><span class="toc-number">1.5.2.</span> <span class="toc-text">ASLR</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#GS"><span class="toc-number">1.5.3.</span> <span class="toc-text">GS</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CheckStackVars"><span class="toc-number">1.5.4.</span> <span class="toc-text">CheckStackVars</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SEHOP"><span class="toc-number">1.5.5.</span> <span class="toc-text">SEHOP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SafeSEH"><span class="toc-number">1.5.6.</span> <span class="toc-text">SafeSEH</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CFG"><span class="toc-number">1.5.7.</span> <span class="toc-text">CFG</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PROCESS-MITIGATION-CHILD-PROCESS-POLICY"><span class="toc-number">1.5.8.</span> <span class="toc-text">PROCESS_MITIGATION_CHILD_PROCESS_POLICY</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windows-IO-FILE"><span class="toc-number">1.6.</span> <span class="toc-text">windows IO_FILE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windows-heap"><span class="toc-number">1.7.</span> <span class="toc-text">windows heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#windbg%E4%B8%8A%E7%9A%84%E5%A0%86%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4"><span class="toc-number">1.7.1.</span> <span class="toc-text">windbg上的堆相关命令</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Windows-10%E4%B8%8B%E7%9A%84%E5%A0%86%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.7.2.</span> <span class="toc-text">Windows 10下的堆类型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#windows%E7%94%A8%E6%88%B7%E6%80%81%E8%BF%9B%E7%A8%8B%E5%A0%86"><span class="toc-number">1.7.3.</span> <span class="toc-text">windows用户态进程堆</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A0%86%E7%AE%A1%E7%90%86%E5%B8%B8%E8%A7%81%E5%87%BD%E6%95%B0"><span class="toc-number">1.7.4.</span> <span class="toc-text">堆管理常见函数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#HeapCreate"><span class="toc-number">1.7.4.1.</span> <span class="toc-text">HeapCreate</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HeapAlloc-HeapFree"><span class="toc-number">1.7.4.2.</span> <span class="toc-text">HeapAlloc&#x2F;HeapFree</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#VirtualAlloc-VirtualFree"><span class="toc-number">1.7.4.3.</span> <span class="toc-text">VirtualAlloc &#x2F; VirtualFree</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#malloc-free"><span class="toc-number">1.7.4.4.</span> <span class="toc-text">malloc &#x2F; free</span></a></li></ol></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        windows 学习（一）
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-10-03T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-10-04</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="windows"><a href="#windows" class="headerlink" title="windows"></a>windows</h1><h2 id="函数调用约定"><a href="#函数调用约定" class="headerlink" title="函数调用约定"></a>函数调用约定</h2><h3 id="x86"><a href="#x86" class="headerlink" title="x86"></a>x86</h3><table>
+<thead>
+<tr>
+<th>调用约定</th>
+<th>定义</th>
+<th>参数传递</th>
+<th>栈平衡</th>
+<th>特点</th>
+<th>应用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>__cdecl</strong></td>
+<td>C语言默认调用约定</td>
+<td>参数从右向左依次压入栈中</td>
+<td>调用者(caller)负责清理栈空间</td>
+<td>支持可变参数函数(VARARG)，因为调用者知道传递了多少参数</td>
+<td>C&#x2F;C++程序中的普通函数默认使用此约定</td>
+</tr>
+<tr>
+<td><strong>__stdcall</strong></td>
+<td>标准调用约定</td>
+<td>参数从右向左依次压入栈中</td>
+<td>被调用函数(callee)负责清理栈空间</td>
+<td>生成的代码比__cdecl小，因为不需要在每个调用点都包含栈清理代码</td>
+<td>Windows API函数主要使用此约定</td>
+</tr>
+<tr>
+<td><strong>__fastcall</strong></td>
+<td>快速调用约定</td>
+<td>前两个DWORD或更小的参数通过寄存器(ECX和EDX)传递，其余参数从右向左压栈</td>
+<td>被调用函数(callee)负责清理栈空间</td>
+<td>通过寄存器传递参数提高函数调用速度</td>
+<td>需要高性能的函数调用场景</td>
+</tr>
+<tr>
+<td><strong>__thiscall</strong></td>
+<td>C++成员函数调用约定</td>
+<td>this指针通过ECX寄存器传递，其余参数从右向左压栈</td>
+<td>被调用函数(callee)负责清理栈空间</td>
+<td>专为C++类成员函数设计</td>
+<td>C++类的非静态成员函数调用</td>
+</tr>
+</tbody></table>
+<ul>
+<li>VARARG 表示参数的个数可以是不确定的，如果使用 VARARG 参数类型，就是调用程序平衡栈，否则按照默认方式平衡栈。</li>
+<li><code>__fastcall</code> 传参规则为前两个参数通过 ecx 和 edx 传递，之后的参数通过栈传递。</li>
+<li><code>__thiscall</code> 传参规则为 ecx 传递 this 指针，其余参数按照从右到左顺序入栈。</li>
+</ul>
+<h3 id="x64"><a href="#x64" class="headerlink" title="x64"></a>x64</h3><ul>
+<li><code>__thiscall</code> 传参规则为 rcx 传递 this 指针，前三个参数通过 rdx、r8、r9 传递，剩余参数布置在栈中。</li>
+<li>其他类型的函数调用传参规则为前四个参数通过 rcx、rdx、r8、r9，剩余参数布置在栈中。</li>
+<li>栈平衡由调用者完成。</li>
+</ul>
+<p>这里需要着重强调一下 windows 64 位函数调用的堆栈。</p>
+<p>在函数调用前前 4 个参数放在寄存器中，第 5 个参数开始依次从 <code>[rsp + 0x20]</code> 位置处开始存放。进入调用的函数后会将寄存器中的参数存放到返回地址后空缺的位置上。</p>
+<p><img src="/image/2025-10-4-learning_windows_pwn_1/1759563374342.png" alt="1759563374342"></p>
+<h2 id="常见-dll"><a href="#常见-dll" class="headerlink" title="常见 dll"></a>常见 dll</h2><ul>
+<li><p>ntdll.dll</p>
+<ul>
+<li><p><strong>核心作用</strong> ：Windows系统最底层的用户模式接口</p>
+</li>
+<li><p><strong>包含未公开API</strong> ：</p>
+<ul>
+<li>实现了Windows Native API（未完全公开的系统接口）</li>
+<li>包含如 <code>NtCreateFile</code>、<code>NtReadFile</code>、<code>NtAllocateVirtualMemory</code>等核心函数</li>
+<li>这些API通常以 <code>Nt</code>或 <code>Zw</code>前缀开头</li>
+</ul>
+</li>
+<li><p><strong>系统调用入口</strong> ：</p>
+<ul>
+<li>是用户模式到内核模式转换的关键桥梁</li>
+<li>通过 <code>syscall</code>&#x2F;<code>sysenter</code>指令触发实际的系统调用</li>
+<li>例如：<code>NtCreateFile</code>最终会触发系统调用号，进入内核的 <code>ntoskrnl.exe</code></li>
+</ul>
+</li>
+<li><p><strong>各版本间不同</strong></p>
+</li>
+</ul>
+</li>
+<li><p>kernel32.dll</p>
+<ul>
+<li><p><strong>核心作用</strong> ：Windows API的主要封装层</p>
+</li>
+<li><p><strong>基础功能API</strong> ：</p>
+<ul>
+<li>提供堆管理（<code>HeapAlloc</code>、<code>HeapFree</code>）</li>
+<li>虚拟内存操作（<code>VirtualAlloc</code>、<code>VirtualFree</code>）</li>
+<li>文件I&#x2F;O（<code>CreateFile</code>、<code>ReadFile</code>、<code>WriteFile</code>）</li>
+<li>进程&#x2F;线程管理（<code>CreateProcess</code>、<code>CreateThread</code>）</li>
+</ul>
+</li>
+<li><p><strong>ntdll函数的封装</strong> ：</p>
+<ul>
+<li>大多数kernel32函数只是简单包装了ntdll中的对应函数</li>
+<li>例如：<code>CreateFileW</code> → <code>BasepCreateFile</code> → <code>NtCreateFile</code></li>
+<li>API 几乎不会修改</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>mscrtxxx.dll &#x2F; ucrtbase.dll</p>
+<ul>
+<li><strong>核心作用</strong> ：C语言运行时库的Windows实现</li>
+</ul>
+</li>
+<li><p><strong>mscrtxxx.dll</strong> ：</p>
+<ul>
+<li>旧版Microsoft C运行时库（如msvcr120.dll）</li>
+<li>类似于Linux中的glibc（GNU C Library）</li>
+</ul>
+</li>
+<li><p><strong>ucrtbase.dll</strong> ：</p>
+<ul>
+<li>Windows 10引入的统一C运行时库（Universal CRT）</li>
+</ul>
+</li>
+</ul>
+<p>dll 之间的函数调用关系如下图所示：</p>
+<p><img src="/image/2025-10-4-learning_windows_pwn_1/1759569034306.png" alt="1759569034306"></p>
+<h2 id="windbg调试命令"><a href="#windbg调试命令" class="headerlink" title="windbg调试命令"></a>windbg调试命令</h2><p><code>r</code> 查看寄存器状态和当前运行指令</p>
+<p><code>lmi</code> 查看进程加载的各个模块。通过这个命令可以获得模块的加载基址。</p>
+<p><code>!address</code> 查看更详细的段信息，类似 pwndbg 的 <code>vmmap</code> 功能。</p>
+<p><code>!address 地址</code> 查看某个地址所在段信息。</p>
+<p><code>dq</code> 八字节查看，<code>dd</code> 四字节查看，<code>dw</code> 两字节查看，<code>dc</code> 一字节查看</p>
+<p><code>eq &lt;address&gt; &lt;value&gt;</code> 修改 8 字节长度的内存中的值。<code>ed</code>，<code>ew</code>，<code>eb</code> 同理，只是修改内存长度有区别。</p>
+<p><code>bp &lt;address&gt; &quot;&lt;condition&gt;&quot;</code> 在某地址处下条件断点，例如 <code>bp 00401234 &quot;eax==0&quot;</code> 。</p>
+<p><code>bl</code> 查看断点，直接点击 <code>Disable</code> 来暂时停用断点，点击 <code>Clear</code> 清除断点。</p>
+<p><code>bu</code>：设置未解析断点，命令设置延迟或未解析的断点。<code>bu EzWinHeap+0x140001566</code></p>
+<p><code>u 地址</code> 查看某地址处的汇编，<code>u</code> 查看程序运行位置的汇编，<code>uf</code> 会一直反汇编到 ret 指令。</p>
+<p><code>dt structure [address]</code> 把 address 当成 structure 类型的结构体解析，如果不加 address 就会单纯打印出结构体。</p>
+<p><code>s -a 7adf0000 L100000 &quot;cmd.exe&quot;</code> 搜索字符串</p>
+<p><code>s -q 0x00000207fbee0000 L1000 0x207fbee07c0</code> 搜索地址</p>
+<p>程序运行到断点停止：g</p>
+<p><code>p</code> 步过 <code>t</code> 步入 <code>gu</code> 步出 <code>k</code> 查看 trace back</p>
+<p><code>~*</code> 用来查看所有线程的信息，可以用来获取 TEB 基址。</p>
+<p><code>~#</code> 显示最初导致异常的线程（或在调试器附加到进程时处于活动状态）。</p>
+<p><code>~[线程编号]s</code>：调试的时候切换线程，例如 <code>~0s</code> 表示切换到 0 号线程，这里的编号即前面 <code>~*</code> 显示在前面的 0，1，2 。</p>
+<p><code>? 0074fbf4 - 74fa68</code> 可以进行简单运算。</p>
+<p><code>x ucrtbased!_read</code> 打印 <code>read</code> 函数的地址和其他信息。这个命令支持通配符，比如 <code>x ucrtbased!*read</code> 。</p>
+<h2 id="常见结构体"><a href="#常见结构体" class="headerlink" title="常见结构体"></a>常见结构体</h2><h3 id="PEB"><a href="#PEB" class="headerlink" title="PEB"></a>PEB</h3><p>PEB（Process Environment Block）是 Windows 操作系统中的一个数据结构，它包含了进程的上下文信息。每个进程都有一个唯一的 PEB，它被存储在进程的用户模式地址空间中。在x86系统中位于 <code>fs:[30h]</code>，在x64系统中位于 <code>gs:[60h]</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">PEB</span> &#123;</span></span><br><span class="line">    BYTE Reserved1[<span class="number">2</span>];</span><br><span class="line">    BYTE BeingDebugged;</span><br><span class="line">    BYTE Reserved2[<span class="number">1</span>];</span><br><span class="line">    PVOID Reserved3[<span class="number">2</span>];</span><br><span class="line">    PPEB_LDR_DATA Ldr;</span><br><span class="line">    PRTL_USER_PROCESS_PARAMETERS ProcessParameters;</span><br><span class="line">    BYTE Reserved4[<span class="number">104</span>];</span><br><span class="line">    PVOID Reserved5[<span class="number">52</span>];</span><br><span class="line">    PPS_POST_PROCESS_INIT_ROUTINE PostProcessInitRoutine;</span><br><span class="line">    BYTE Reserved6[<span class="number">128</span>];</span><br><span class="line">    PVOID Reserved7[<span class="number">1</span>];</span><br><span class="line">    ULONG SessionId;</span><br><span class="line">&#125; PEB,*PPEB;</span><br></pre></td></tr></table></figure>
+
+<p>PEB 与 TEB 的相对偏移固定，使用 <code>.process</code> 或者 <code>r $peb</code> 查看进程的 PEB 地址，随后使用 <code>dt _PEB peb_addr</code> 查看进程的 PEB 信息。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; .process</span><br><span class="line">Implicit process is now 00c37000</span><br><span class="line">0:000&gt; r $peb</span><br><span class="line">$peb=00c37000</span><br><span class="line">0:000&gt; dt _PEB 00c37000</span><br><span class="line">ntdll!_PEB</span><br><span class="line">   +0x000 InheritedAddressSpace : 0 &#x27;&#x27;</span><br><span class="line">   +0x001 ReadImageFileExecOptions : 0 &#x27;&#x27;</span><br><span class="line">   +0x002 BeingDebugged    : 0x1 &#x27;&#x27;</span><br><span class="line">   +0x003 BitField         : 0x4 &#x27;&#x27;</span><br><span class="line">   +0x003 ImageUsesLargePages : 0y0</span><br><span class="line">   +0x003 IsProtectedProcess : 0y0</span><br><span class="line">   +0x003 IsImageDynamicallyRelocated : 0y1</span><br><span class="line">   +0x003 SkipPatchingUser32Forwarders : 0y0</span><br><span class="line">   +0x003 IsPackagedProcess : 0y0</span><br><span class="line">   +0x003 IsAppContainer   : 0y0</span><br><span class="line">   +0x003 IsProtectedProcessLight : 0y0</span><br><span class="line">   +0x003 IsLongPathAwareProcess : 0y0</span><br><span class="line">   +0x004 Mutant           : 0xffffffff Void</span><br><span class="line">   +0x008 ImageBaseAddress : 0x00540000 Void</span><br><span class="line">   +0x00c Ldr              : 0x775deb20 _PEB_LDR_DATA</span><br><span class="line">   ...</span><br></pre></td></tr></table></figure>
+
+<p><code>!peb</code> 查看 PEB 的具体内容，ImageBaseAddress为程序基地址，ProcessHeap为堆地址</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; !peb</span><br><span class="line">PEB at 00c37000</span><br><span class="line">    InheritedAddressSpace:    No</span><br><span class="line">    ReadImageFileExecOptions: No</span><br><span class="line">    BeingDebugged:            Yes</span><br><span class="line">    ImageBaseAddress:         00540000</span><br><span class="line">    NtGlobalFlag:             70</span><br><span class="line">    NtGlobalFlag2:            0</span><br><span class="line">    Ldr                       775deb20</span><br><span class="line">    Ldr.Initialized:          Yes</span><br><span class="line">    Ldr.InInitializationOrderModuleList: 01075268 . 01075778</span><br><span class="line">    Ldr.InLoadOrderModuleList:           01075370 . 01077610</span><br><span class="line">    Ldr.InMemoryOrderModuleList:         01075378 . 01077618</span><br><span class="line">            Base TimeStamp                     Module</span><br><span class="line">          540000 5eff73f6 Jul 04 02:07:50 2020 C:\1\Download\easyWinHeap\EasyWinHeap.exe</span><br><span class="line">        774b0000 C:\Windows\SYSTEM32\ntdll.dll</span><br><span class="line">        76030000 25e3fa57 Feb 22 22:42:31 1990 C:\Windows\System32\KERNEL32.DLL</span><br><span class="line">        76580000 53a79838 Jun 23 11:00:08 2014 C:\Windows\System32\KERNELBASE.dll</span><br><span class="line">        76b90000 C:\Windows\System32\ucrtbase.dll</span><br><span class="line">        69a10000 5e74ae97 Mar 20 19:52:55 2020 C:\1\Download\easyWinHeap\VCRUNTIME140.dll</span><br><span class="line">    SubSystemData:     00000000</span><br><span class="line">    ProcessHeap:       01070000</span><br><span class="line">    ProcessParameters: 01072c70</span><br><span class="line">    CurrentDirectory:  &#x27;C:\Windows\system32\&#x27;</span><br><span class="line">    WindowTitle:  &#x27;C:\1\Download\easyWinHeap\EasyWinHeap.exe&#x27;</span><br><span class="line">    ImageFile:    &#x27;C:\1\Download\easyWinHeap\EasyWinHeap.exe&#x27;</span><br><span class="line">    CommandLine:  &#x27;C:\1\Download\easyWinHeap\EasyWinHeap.exe&#x27;</span><br><span class="line">    DllPath:      &#x27;&lt; Name not readable &gt;&#x27;</span><br><span class="line">    Environment:  01070cf8</span><br></pre></td></tr></table></figure>
+
+<h3 id="TEB"><a href="#TEB" class="headerlink" title="TEB"></a>TEB</h3><p>TEB（Thread Environment Block）是 Windows 操作系统中的一个线程私有的数据结构，用于存储线程相关的信息。每个线程都有一个对应的 TEB 。32 位程序 FS 寄存器指向当前线程的 TEB ，64 位程序 GS 寄存器指向当前线程的 TEB 。</p>
+<p>使用 <code>r $teb</code> 查看进程的 TEB 地址，<code>!teb</code> 可以查看 TEB 详细信息。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; r $teb</span><br><span class="line">$teb=00c3a000</span><br><span class="line">0:000&gt; !teb</span><br><span class="line">TEB at 00c3a000</span><br><span class="line">    ExceptionList:        00bbf2a0</span><br><span class="line">    StackBase:            00bc0000</span><br><span class="line">    StackLimit:           00bbd000</span><br><span class="line">    SubSystemTib:         00000000</span><br><span class="line">    FiberData:            00001e00</span><br><span class="line">    ArbitraryUserPointer: 00000000</span><br><span class="line">    Self:                 00c3a000</span><br><span class="line">    EnvironmentPointer:   00000000</span><br><span class="line">    ClientId:             00002d78 . 00003c8c</span><br><span class="line">    RpcHandle:            00000000</span><br><span class="line">    Tls Storage:          01075d60</span><br><span class="line">    PEB Address:          00c37000</span><br><span class="line">    LastErrorValue:       0</span><br><span class="line">    LastStatusValue:      0</span><br><span class="line">    Count Owned Locks:    0</span><br><span class="line">    HardErrorMode:        0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>TEB 的开头是一个 NT_TIB 结构，Thread Infomation Block，线程信息块，具体如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dt _nt_tib</span><br><span class="line">ntdll!_NT_TIB</span><br><span class="line">   +0x000 ExceptionList    : Ptr32 _EXCEPTION_REGISTRATION_RECORD</span><br><span class="line">   +0x004 StackBase        : Ptr32 Void  // 线程堆栈顶 </span><br><span class="line">   +0x008 StackLimit       : Ptr32 Void   // 线程堆栈底</span><br><span class="line">   +0x00c SubSystemTib     : Ptr32 Void</span><br><span class="line">   +0x010 FiberData        : Ptr32 Void</span><br><span class="line">   +0x010 Version          : Uint4B</span><br><span class="line">   +0x014 ArbitraryUserPointer : Ptr32 Void</span><br><span class="line">   +0x018 Self             : Ptr32 _NT_TIB   // _NT_TIB结构体的自引用指针</span><br></pre></td></tr></table></figure>
+
+<p>可以用于泄露栈地址</p>
+<h3 id="SEH"><a href="#SEH" class="headerlink" title="SEH"></a>SEH</h3><p>SEH（Structured Exception Handling，结构化异常处理）是 Windows 操作系统中的一种异常处理机制。</p>
+<p>异常处理需要注册异常，即在异常处理链表中添加 <code>_EXCEPTION_REGISTRATION_RECORD</code> 节点</p>
+<p><code>_EXCEPTION_REGISTRATION_RECORD</code> 中的 <code>Next</code> 指向上一个 <code>_EXCEPTION_REGISTRATION_RECORD</code> 结构，<code>Handler</code> 指向异常处理的代码。</p>
+<p><img src="/image/2025-10-4-learning_windows_pwn_1/1759645034590.png" alt="1759645034590"></p>
+<h2 id="常见保护"><a href="#常见保护" class="headerlink" title="常见保护"></a>常见保护</h2><h3 id="DEP"><a href="#DEP" class="headerlink" title="DEP"></a>DEP</h3><ul>
+<li>类似 Linux 上的 NX 保护，可以理解为内存的可写和可执行不共存。</li>
+<li>绕过方法<ul>
+<li>ROP</li>
+<li>调用 VirtualProtect （类似于 Linux 的 mprotect）</li>
+</ul>
+</li>
+</ul>
+<h3 id="ASLR"><a href="#ASLR" class="headerlink" title="ASLR"></a>ASLR</h3><ul>
+<li>TEB&#x2F;PEB&#x2F;heap&#x2F;stack 的基址每次运行程序都会改变</li>
+<li>一些内核相关的 dll 例如 ntdll.dll 和 kernel32.dll 在所有进程中基址相同</li>
+<li>绕过方法<ul>
+<li><p>泄露地址</p>
+<ul>
+<li>一些 dll 的加载基址在所有进程都相同，因此可以在另一个进程中泄露基址。<ul>
+<li>模块加载基址每次重启才会改变，因此只要靶机不重启不必每次运行程序时泄露基址。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="GS"><a href="#GS" class="headerlink" title="GS"></a>GS</h3><ul>
+<li>windows 版的 canary</li>
+<li>绕过方法<ul>
+<li>泄露canary值（通过信息泄露漏洞）</li>
+<li>覆盖SEH处理程序指针（利用未受GS保护的SEH）</li>
+</ul>
+</li>
+</ul>
+<h3 id="CheckStackVars"><a href="#CheckStackVars" class="headerlink" title="CheckStackVars"></a>CheckStackVars</h3><p>这个保护是在函数返回前调用 <code>_RTC_CheckStackVars</code> 函数检查栈中的局部变量的前后 4 字节是否被修改，通常在 Debug 版程序中会出现。</p>
+<p>函数在结束时调用了 <code>CheckStackVars</code> ，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __fastcall <span class="title function_">RTC_CheckStackVars</span><span class="params">(<span class="type">void</span> *Esp, _RTC_framedesc *Fd)</span></span><br></pre></td></tr></table></figure>
+
+<p>这个函数遍历 _RTC_vardesc (保存在 <code>.rdata</code> 段)描述的所有局部变量，检查变量的前后 4 字节是否被修改（即是否不是 0xCCCCCCCC）。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">RTC_vardesc</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="type">int</span> addr;</span><br><span class="line">  <span class="type">int</span> size;</span><br><span class="line">  <span class="type">char</span> *name;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">RTC_framedesc</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="type">int</span> varCount;</span><br><span class="line">  _RTC_vardesc *variables;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/image/2025-10-4-learning_windows_pwn_1/1759651314902.png" alt="1759651314902"></p>
+<h3 id="SEHOP"><a href="#SEHOP" class="headerlink" title="SEHOP"></a>SEHOP</h3><p>在 <code>ntdll!RtlDispatchException</code> 中有对 SEH 链表的检查</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">      RtlpGetStackLimits(&amp;StackLimit, &amp;StackBase);</span><br><span class="line">      ExceptionList = NtCurrentTeb()-&gt;NtTib.ExceptionList;</span><br><span class="line">      ProcessInformation = <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">if</span> ( ZwQueryInformationProcess((HANDLE)<span class="number">0xFFFFFFFF</span>, ProcessExecuteFlags, &amp;ProcessInformation, <span class="number">4u</span>, <span class="number">0</span>) &lt; <span class="number">0</span> )</span><br><span class="line">        ProcessInformation = <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">if</span> ( (ProcessInformation &amp; <span class="number">0x40</span>) != <span class="number">0</span> || RtlpIsValidExceptionChain(ExceptionList, StackLimit, StackBase) )<span class="comment">// SEHOP</span></span><br><span class="line">      &#123;</span><br><span class="line">LABEL_11:</span><br><span class="line">        RegistrationPointerForCheck = ExceptionList;</span><br><span class="line">        NestedRegistration = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> ( RegistrationPointerForCheck != (_EXCEPTION_REGISTRATION_RECORD *)<span class="number">-1</span> )<span class="comment">// -1 表示 SEH 链结束</span></span><br><span class="line">        &#123;</span><br><span class="line">          <span class="keyword">if</span> ( (<span class="type">unsigned</span> <span class="type">int</span>)RegistrationPointerForCheck &lt; StackLimit</span><br><span class="line">            || (<span class="type">unsigned</span> <span class="type">int</span>)&amp;RegistrationPointerForCheck[<span class="number">1</span>] &gt; StackBase<span class="comment">// SEH 节点不在栈中</span></span><br><span class="line">            || ((<span class="type">unsigned</span> __int8)RegistrationPointerForCheck &amp; <span class="number">3</span>) != <span class="number">0</span><span class="comment">// SEH 节点的位置没有 4 字节对齐</span></span><br><span class="line">            || (Handler = RegistrationPointerForCheck-&gt;Handler, (<span class="type">unsigned</span> <span class="type">int</span>)Handler &lt; StackBase)</span><br><span class="line">            &amp;&amp; StackLimit &lt;= (<span class="type">unsigned</span> <span class="type">int</span>)Handler</span><br><span class="line">            || !RtlIsValidHandler(Handler, ProcessInformation, pContext) )<span class="comment">// safeSEH</span></span><br><span class="line">          &#123;</span><br><span class="line">            pExcptRec-&gt;ExceptionFlags |= EXCEPTION_STACK_INVALID;<span class="comment">// EXCEPTION_STACK_INVALID</span></span><br><span class="line">            <span class="keyword">goto</span> DispatchExit;</span><br><span class="line">          &#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>其中 RtlpIsValidExceptionChain 内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> __fastcall <span class="title function_">RtlpIsValidExceptionChain</span><span class="params">(</span></span><br><span class="line"><span class="params">        _EXCEPTION_REGISTRATION_RECORD *ExceptionList,</span></span><br><span class="line"><span class="params">        <span class="type">unsigned</span> <span class="type">int</span> StackLimit,</span></span><br><span class="line"><span class="params">        <span class="type">unsigned</span> <span class="type">int</span> StackBase,</span></span><br><span class="line"><span class="params">        <span class="type">int</span> StackLimita)</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="type">unsigned</span> <span class="type">int</span> stackBase; <span class="comment">// ebx</span></span><br><span class="line">  <span class="type">int</span> stackLimit; <span class="comment">// eax</span></span><br><span class="line">  _EXCEPTION_DISPOSITION (__stdcall *Handler)(_EXCEPTION_RECORD *, <span class="type">void</span> *, _CONTEXT *, <span class="type">void</span> *); <span class="comment">// edx</span></span><br><span class="line"></span><br><span class="line">  stackBase = StackBase;</span><br><span class="line">  stackLimit = StackLimit;</span><br><span class="line">  <span class="keyword">while</span> ( ExceptionList != (_EXCEPTION_REGISTRATION_RECORD *)<span class="number">-1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">if</span> ( stackLimit &gt; (<span class="type">unsigned</span> <span class="type">int</span>)ExceptionList )</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( (<span class="type">unsigned</span> <span class="type">int</span>)ExceptionList &gt;= stackBase - <span class="number">8</span> )</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( ((<span class="type">unsigned</span> __int8)ExceptionList &amp; <span class="number">3</span>) != <span class="number">0</span> )</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    Handler = ExceptionList-&gt;Handler;</span><br><span class="line">    <span class="keyword">if</span> ( (<span class="type">unsigned</span> <span class="type">int</span>)Handler &lt; stackBase &amp;&amp; StackLimit &lt;= (<span class="type">unsigned</span> <span class="type">int</span>)Handler )</span><br><span class="line">      <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> ( ExceptionList-&gt;Next == (_EXCEPTION_REGISTRATION_RECORD *)<span class="number">-1</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      stackBase = StackBase;</span><br><span class="line">      <span class="keyword">if</span> ( (NtCurrentTeb()-&gt;SameTebFlags &amp; <span class="number">0x200</span>) != <span class="number">0</span> &amp;&amp; Handler != RtlpFinalExceptionHandler )</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    stackLimit = (<span class="type">int</span>)&amp;ExceptionList[<span class="number">1</span>];</span><br><span class="line">    ExceptionList = ExceptionList-&gt;Next;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>主要检查 SEH 是否满足如下条件：</p>
+<ul>
+<li>SEH 节点在栈中</li>
+<li>SEH 节点指向的 Handler 不在栈中</li>
+<li>SEH 节点地址 4 字节对齐</li>
+<li>SEH 最后一个节点的 Next 为 -1 且 Handler 为 RtlpFinalExceptionHandler</li>
+<li>SEH 节点的 Next 指向的下一个节点的地址一定大于当前节点</li>
+</ul>
+<p>只要泄露栈地址就可以伪造 SEH 链表绕过 SEHOP 检查(直接修改栈上的SEH节点为SEH异常处理链的最后一块地址)</p>
+<h3 id="SafeSEH"><a href="#SafeSEH" class="headerlink" title="SafeSEH"></a>SafeSEH</h3><p>在 <code>ntdll!RtlDispatchException</code> 中调用 <code>RtlIsValidHandler</code> 进一步检查 SEH 链表，伪代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"> BOOL <span class="title function_">RtlIsValidHandler</span><span class="params">(handler)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (handler image has a SafeSEH table) &#123; <span class="comment">//检查异常处理程序所在的模块是否包含SafeSEH表（编译时通过/GS选项生成）</span></span><br><span class="line">        <span class="keyword">if</span> (handler found in the table) <span class="comment">//处理程序在表中</span></span><br><span class="line">            <span class="keyword">return</span> TRUE;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> FALSE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (ExecuteDispatchEnable|ImageDispatchEnable bit <span class="built_in">set</span> in the process flags) <span class="comment">// 允许在加载模块内存空间外执行</span></span><br><span class="line">        <span class="keyword">return</span> TRUE;</span><br><span class="line">    <span class="keyword">if</span> (handler is on a executeable page) &#123;</span><br><span class="line">        <span class="keyword">if</span> (handler is in an image) &#123;  <span class="comment">//Handler 位于一个模块</span></span><br><span class="line">            <span class="keyword">if</span> (image has the IMAGE_DLLCHARACTERISTICS_NO_SEH flag <span class="built_in">set</span>)  <span class="comment">//标志明确表示“本模块不使用 SEH”</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">            <span class="keyword">if</span> (image is a .NET assembly whith the ILonly flag <span class="built_in">set</span>) <span class="comment">//该模块是一个纯粹的 .NET 程序集，它的代码不是原生机器码，不能直接作为 SEH 处理程序</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">            <span class="keyword">return</span> TRUE;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (handler is not in an image) &#123;</span><br><span class="line">            <span class="keyword">if</span> (ImageDispatchEnable bit <span class="built_in">set</span> in the process flags)</span><br><span class="line">                <span class="keyword">return</span> TRUE;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">                <span class="keyword">return</span> FALSE;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (handler is on a non-executable page) &#123; </span><br><span class="line">        <span class="keyword">if</span> (ExecuteDispatchEnable bit <span class="built_in">set</span> in the process flags)</span><br><span class="line">            <span class="keyword">return</span> TRUE;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            raise ACCESS_VIOLATION;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将 <code>Handler</code> 覆盖指向有 SEH 但没有 SafeSEH 保护的 Image 即可绕过。</p>
+<h3 id="CFG"><a href="#CFG" class="headerlink" title="CFG"></a>CFG</h3><p>即 Control Flow Guard ，为函数指针创建白名单，每次调用前都会检查。</p>
+<p>windows下的是前向CFI：只考略call，jump的直接跳转和间接跳转，没有计算ret的情况，会在每一个跳转间自动插入一小段检查代码，这段代码会去调用一个核心的验证函数 <code>__guard_check_icall_fptr</code></p>
+<p>Windows CFG实现还依赖于bitmap表，bitmap表中的两位与实际地址的16byte一一对应：</p>
+<ul>
+<li>00：该地址范围没有有效的跳转地址</li>
+<li>01：地址范围包含导出抑制表目标</li>
+<li>10：只有16位对其的地址有效（该范围的第一个地址）</li>
+<li>11：地址范围的所有地址均有效</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __fastcall <span class="title function_">LdrpValidateUserCallTarget</span><span class="params">(<span class="type">unsigned</span> __int64 FuncPtr)</span></span><br><span class="line">&#123;</span><br><span class="line">  __int64 BitMap; <span class="comment">// rdx</span></span><br><span class="line">  <span class="type">unsigned</span> __int64 Offset; <span class="comment">// rax</span></span><br><span class="line"></span><br><span class="line">  BitMap = CFGBitMap[FuncPtr &gt;&gt; <span class="number">9</span>];</span><br><span class="line">  Offset = FuncPtr &gt;&gt; <span class="number">3</span>;  <span class="comment">//&amp; 0x3F;</span></span><br><span class="line">  <span class="keyword">if</span> ( (FuncPtr &amp; <span class="number">0xF</span>) != <span class="number">0</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    Offset &amp;= ~<span class="number">1u</span>i64;</span><br><span class="line">    <span class="keyword">if</span> ( !_bittest64(&amp;BitMap, Offset) )</span><br><span class="line">    &#123;</span><br><span class="line">LABEL_6:</span><br><span class="line">      LdrpHandleInvalidUserCallTarget();</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">LABEL_5:</span><br><span class="line">    <span class="keyword">if</span> ( _bittest64(&amp;BitMap, Offset | <span class="number">1</span>) )</span><br><span class="line">      <span class="keyword">return</span>;</span><br><span class="line">    <span class="keyword">goto</span> LABEL_6;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> ( !_bittest64(&amp;BitMap, Offset) )</span><br><span class="line">    <span class="keyword">goto</span> LABEL_5;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>绕过方法：ROP（利用一些在白名单里的跳转gadget）</p>
+<h3 id="PROCESS-MITIGATION-CHILD-PROCESS-POLICY"><a href="#PROCESS-MITIGATION-CHILD-PROCESS-POLICY" class="headerlink" title="PROCESS_MITIGATION_CHILD_PROCESS_POLICY"></a>PROCESS_MITIGATION_CHILD_PROCESS_POLICY</h3><p><code>PROCESS_MITIGATION_CHILD_PROCESS_POLICY</code> 是Windows操作系统中的一项安全功能。该功能允许管理员指定如何创建子进程以及它们从其父进程继承哪些安全设置。该功能可用于防止子进程继承某些安全设置，例如创建新进程或访问某些系统资源的能力。</p>
+<p>可用于配置 <code>PROCESS_MITIGATION_CHILD_PROCESS_POLICY</code> 的几个选项，包括：</p>
+<ul>
+<li><code>NoChildProcessCreation</code>：防止创建子进程。</li>
+<li><code>ParentProcess</code>：允许子进程继承与其父进程相同的安全设置。</li>
+<li><code>ChildProcessRestricted</code>：将子进程的安全设置限制为其父进程安全设置的子集。</li>
+</ul>
+<p>可使用如下命令查询 <code>PROCESS_MITIGATION_CHILD_PROCESS_POLICY</code> 是否已开启（在管理员权限的 Powershell 中查询）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Get-ProcessMitigation -Name 程序名</span><br></pre></td></tr></table></figure>
+
+<p>可以使用如下命令开启 <code>ChildProcessRestricted</code> 保护，效果是不能执行 <code>system(&quot;cmd.exe&quot;)</code>，只能 ORW 获取 flag 。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Set-ProcessMitigation -Name 程序名 -Enable DisallowChildProcessCreation</span><br></pre></td></tr></table></figure>
+
+<h2 id="windows-IO-FILE"><a href="#windows-IO-FILE" class="headerlink" title="windows IO_FILE"></a>windows IO_FILE</h2><p>Windows 的 <code>FILE</code> 结构体定义在 <code>ucrtbase.dll</code> 中，其结构体是实际上是 <code>__crt_stdio_stream_data</code>，大小为 0x58 。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">RTL_CRITICAL_SECTION</span> &#123;</span></span><br><span class="line">    _RTL_CRITICAL_SECTION_DEBUG *DebugInfo;</span><br><span class="line">    <span class="type">int</span> LockCount;</span><br><span class="line">    <span class="type">int</span> RecursionCount;</span><br><span class="line">    <span class="type">void</span> *OwningThread;</span><br><span class="line">    <span class="type">void</span> *LockSemaphore;</span><br><span class="line">    <span class="type">unsigned</span> __int64 SpinCount;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> __<span class="title">crt_stdio_stream_data</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        FILE _public_file;</span><br><span class="line">        <span class="type">char</span>* _ptr; <span class="comment">// 当前结构指针</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">char</span> *_base; <span class="comment">// 输入缓冲区基址</span></span><br><span class="line">    <span class="type">int</span> _cnt; <span class="comment">// 没有被读出的缓冲区剩余大小</span></span><br><span class="line">    <span class="type">int</span> _flags;</span><br><span class="line">    <span class="type">int</span> _file; <span class="comment">// 文件描述符</span></span><br><span class="line">    <span class="type">int</span> _charbuf; <span class="comment">// Local buffer</span></span><br><span class="line">    <span class="type">int</span> _bufsiz; <span class="comment">// buffer size</span></span><br><span class="line">    <span class="type">char</span> *_tmpfname;</span><br><span class="line">    _RTL_CRITICAL_SECTION _lock; <span class="comment">// lock</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>如果要实现任意地址读，<code>fwrite</code>：</p>
+<ul>
+<li>设置 <code>_file</code> 文件描述符为 <code>stdout</code> 输出符</li>
+<li>设置 <code>_flag</code> 为 <code>_IOWRITE | IOBUFFER_USER | _IOUPDATE</code></li>
+<li>设置 <code>_cnt=0</code></li>
+<li>设置 <code>_base&amp; _ptr</code> 指向读取的地址</li>
+<li>设置 <code>_bufsize</code> 为输出的大小</li>
+</ul>
+<p>如果要实现任意地址写，<code>fread</code>：</p>
+<ul>
+<li>设置 <code>_file</code> 文件描述符为 <code>stdin</code> 输出符</li>
+<li>设置 <code>_flag</code> 为 <code>_IOALLOCATED | _IOBUFFER_USER</code></li>
+<li>设置 <code>_cnt=0</code></li>
+<li>设置 <code>_base&amp; _ptr</code> 指向写入的地址</li>
+<li>设置 <code>_bufsize</code> 为输入的大小</li>
+</ul>
+<p>程序在每次执行如下代码时会在进程的<strong>默认堆</strong>中申请一个 0x60 大小的 chunk 并将其填充为 <code>__crt_stdio_stream_data</code> 结构体然后将该结构体地址写入 <code>Stream</code> 中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fopen_s(&amp;Stream, <span class="string">&quot;magic.txt&quot;</span>, <span class="string">&quot;rb&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>如果我们能够劫持 <code>Stream</code> 指针或者 UAF 修改 <code>__crt_stdio_stream_data</code> 结构体就可以在执行下面这段代码时实现任意地址写。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fread_s(buffer, size, <span class="number">1u</span>i64, size, Stream);</span><br></pre></td></tr></table></figure>
+
+<p>具体伪造方式如下，主要操作是把 <code>_base</code> 指向要写入数据的地址，<code>_file</code> 设为 0 即标准输入。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">fake_FILE = &#x27;&#x27;</span><br><span class="line">fake_FILE += p64(0)  # _ptr</span><br><span class="line">fake_FILE += p64(target_addr)  # _base</span><br><span class="line">fake_FILE += p32(0)  # _cnt</span><br><span class="line">fake_FILE += p32(0x2080)  # _flags</span><br><span class="line">fake_FILE += p32(0)  # _file = stdin(0)</span><br><span class="line">fake_FILE += p32(0)  # _charbuf</span><br><span class="line">fake_FILE += p64(0x200)  # _bufsiz</span><br><span class="line">fake_FILE += p64(0)  # _tmpfname</span><br><span class="line">fake_FILE += p64(0xffffffffffffffff)  # DebugInfo</span><br><span class="line">fake_FILE += p32(0xffffffff)  # LockCount</span><br><span class="line">fake_FILE += p32(0)  # RecursionCount</span><br><span class="line">fake_FILE += p64(0)  # OwningThread</span><br><span class="line">fake_FILE += p64(0)  # LockSemaphore</span><br><span class="line">fake_FILE += p64(0)  # SpinCount</span><br></pre></td></tr></table></figure>
+
+<h2 id="windows-heap"><a href="#windows-heap" class="headerlink" title="windows heap"></a>windows heap</h2><h3 id="windbg上的堆相关命令"><a href="#windbg上的堆相关命令" class="headerlink" title="windbg上的堆相关命令"></a>windbg上的堆相关命令</h3><p><code>!heap</code> 打印当前进程所有堆</p>
+<p><code>!heap -h</code> 可以查看当前进程所创建的堆空间</p>
+<p><code>!heap -x address</code> 打印包含 address 的堆块的相关信息</p>
+<p><code>!heap -i address</code> 显示 address 对应堆块的详细信息</p>
+<p><code>!heap -v address</code> 检查堆是否损坏，address 为 heap 地址。例如伪造 <code>FreeList</code> 链表后可以用这个命令测试是否能通过检查。</p>
+<h3 id="Windows-10下的堆类型"><a href="#Windows-10下的堆类型" class="headerlink" title="Windows 10下的堆类型"></a>Windows 10下的堆类型</h3><ol>
+<li>NT Heap<ul>
+<li>默认的内存管理器</li>
+</ul>
+</li>
+<li>SegmentHeap<ul>
+<li>win10新增的内存管理器</li>
+<li>部分系统程序以及UWP(Universal Windows Platform)使用</li>
+</ul>
+</li>
+</ol>
+<h3 id="windows用户态进程堆"><a href="#windows用户态进程堆" class="headerlink" title="windows用户态进程堆"></a>windows用户态进程堆</h3><p>windows用户态进程的堆空间包含两种类型：</p>
+<ul>
+<li>Process Heap（默认），整个进程共享的堆，它包括两个部分：<ul>
+<li>default heap ，其地址信息会存放于 _PEB 的 ProcessHeap 中，<code>GetProcessHeap()</code> 函数返回的就是这个堆的句柄。</li>
+<li>crtheap(C&#x2F;C++运行时堆)，当你调用 <code>malloc</code>, <code>new</code> 等标准C&#x2F;C++库函数时，你使用的是C&#x2F;C++运行时库（CRT）管理的堆。<strong>CRT在初始化时会调用 <code>HeapCreate</code> 创建一个或多个自己的私有堆</strong>来管理内存，而不是直接使用进程的默认堆。</li>
+</ul>
+</li>
+<li>Private Heap，通过 HeapCreate 创建的堆。</li>
+</ul>
+<h3 id="堆管理常见函数"><a href="#堆管理常见函数" class="headerlink" title="堆管理常见函数"></a>堆管理常见函数</h3><h4 id="HeapCreate"><a href="#HeapCreate" class="headerlink" title="HeapCreate"></a>HeapCreate</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI HANDLE WINAPI <span class="title function_">HeapCreate</span> <span class="params">(DWORD flOptions, SIZE_T dwInitialSize, SIZE_T dwMaximumSize)</span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>作用：创建一个新的堆对象。</li>
+<li>参数：<ul>
+<li><code>flOptions</code>：堆的选项标志。可以是以下标志的组合：<ul>
+<li><code>HEAP_GENERATE_EXCEPTIONS</code>：在内存不足时引发异常。</li>
+<li><code>HEAP_NO_SERIALIZE</code>：多线程访问堆时不进行同步。</li>
+</ul>
+</li>
+<li><code>dwInitialSize</code>：堆的初始大小（以字节为单位）。如果为 0 ，则系统会选择一个默认的初始大小。</li>
+<li><code>dwMaximumSize</code>：堆的最大大小（以字节为单位）。如果为 0 ，则堆的大小受系统的限制。</li>
+</ul>
+</li>
+<li>返回值：<ul>
+<li>如果操作成功，返回堆对象的句柄；</li>
+<li>如果操作失败，返回 NULL 。</li>
+</ul>
+</li>
+</ul>
+<h4 id="HeapAlloc-HeapFree"><a href="#HeapAlloc-HeapFree" class="headerlink" title="HeapAlloc&#x2F;HeapFree"></a>HeapAlloc&#x2F;HeapFree</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI LPVOID WINAPI <span class="title function_">HeapAlloc</span> <span class="params">(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)</span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>作用：在指定的堆中分配指定大小的内存块。</li>
+<li>参数：<ul>
+<li><code>hHeap</code>：要分配内存的堆的句柄。此句柄通常由HeapCreate函数创建。</li>
+<li><code>dwFlags</code>：内存分配的标志。可以是以下标志的组合：<ul>
+<li><code>HEAP_ZERO_MEMORY</code>：分配的内存块被初始化为零。</li>
+<li><code>HEAP_GENERATE_EXCEPTIONS</code>：在分配内存时发生错误时生成异常。</li>
+<li><code>HEAP_NO_SERIALIZE</code>：禁用堆的同步机制，使多线程访问堆时不同步。</li>
+</ul>
+</li>
+<li><code>dwBytes</code>：要分配的内存块的大小（以字节为单位）。</li>
+</ul>
+</li>
+<li>返回值：<ul>
+<li>如果分配成功，返回指向分配的内存块的指针；</li>
+<li>如果分配失败，返回 NULL 。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI WINBOOL WINAPI <span class="title function_">HeapFree</span><span class="params">(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>返回值：True&#x2F;False</p>
+</li>
+<li><p>参数：</p>
+<ul>
+<li><code>hHeap</code>：要释放内存的堆的句柄。</li>
+<li><code>dwFlags</code>：释放内存的标志。可以是以下标志的组合：<ul>
+<li><code>HEAP_NO_SERIALIZE</code>：禁用堆的同步机制，使多线程访问堆时不同步。</li>
+</ul>
+</li>
+<li><code>lpMem</code>：要释放的内存块的指针。</li>
+</ul>
+</li>
+</ul>
+<h4 id="VirtualAlloc-VirtualFree"><a href="#VirtualAlloc-VirtualFree" class="headerlink" title="VirtualAlloc &#x2F; VirtualFree"></a><strong>VirtualAlloc &#x2F; VirtualFree</strong></h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI LPVOID WINAPI <span class="title function_">VirtualAlloc</span> <span class="params">(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)</span>;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>作用：为进程保留或提交指定大小的虚拟内存区域。</p>
+</li>
+<li><p>参数：</p>
+<ul>
+<li><code>lpAddress</code>：要保留或提交的虚拟内存区域的首字节地址。可以指定为NULL，表示由系统选择地址。</li>
+<li><code>dwSize</code>：要保留或提交的虚拟内存区域的大小（以字节为单位）。</li>
+<li><code>flAllocationType</code>：内存分配的类型标志。可以是以下标志的组合：<ul>
+<li><code>MEM_COMMIT</code>：提交虚拟内存区域。</li>
+<li><code>MEM_RESERVE</code>：保留虚拟内存区域。</li>
+<li><code>MEM_RESET</code>：将虚拟内存区域的内容重置为零。</li>
+<li><code>MEM_RESET_UNDO</code>：撤消对虚拟内存区域的重置操作。</li>
+</ul>
+</li>
+<li><code>flProtect</code>：内存保护标志，指定分配的内存区域的访问权限和保护级别。</li>
+</ul>
+</li>
+<li><p>返回值：</p>
+<ul>
+<li>如果操作成功，返回分配的虚拟内存区域的首字节地址；</li>
+<li>如果操作失败，返回 NULL 。</li>
+</ul>
+</li>
+<li><p><code>VirtualAlloc</code> 是在比“堆”更低的层面上操作内存。 <strong>堆管理器（Heap Manager）本身就是构建在 <code>VirtualAlloc</code> 之上的</strong> 。当你创建一个堆（<code>HeapCreate</code>）或者堆需要更多内存时，堆管理器会在内部调用 <code>VirtualAlloc</code> 来向操作系统申请大块的虚拟地址空间（保留或提交），然后再将这些大块内存细分，管理后分配给 <code>HeapAlloc</code> 的调用者。</p>
+</li>
+<li><p><strong>关键区别</strong> ：<code>VirtualAlloc</code> 操作的是页（Page，通常是4KB）的整数倍，而 <code>HeapAlloc</code> 可以分配任意字节大小的内存块。</p>
+</li>
+</ul>
+<h4 id="malloc-free"><a href="#malloc-free" class="headerlink" title="malloc &#x2F; free"></a><strong>malloc &#x2F; free</strong></h4><ul>
+<li>这是C语言标准库的函数。</li>
+<li><strong>底层实现</strong> : 在Windows上，<code>malloc</code> 和 <code>free</code> 是由C&#x2F;C++运行时库实现的。它们最终会调用Windows的堆API（如 <code>HeapAlloc</code>&#x2F;<code>HeapFree</code>）来向操作系统申请和释放内存。它们管理的是CRT自己的 <strong>私有堆</strong> 。</li>
+<li><strong>不能混用内存分配函数系列：</strong> 例如，由 <code>malloc</code> 分配的内存必须由 <code>free</code> 释放；由 <code>HeapAlloc</code> 分配的内存必须由 <code>HeapFree</code> 释放；由 <code>new</code> 分配的内存必须由 <code>delete</code> 释放。混用会导致堆损坏，引发程序崩溃或难以调试的错误。</li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E7%BA%A6%E5%AE%9A"><span class="toc-number">1.1.</span> <span class="toc-text">函数调用约定</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#x86"><span class="toc-number">1.1.1.</span> <span class="toc-text">x86</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#x64"><span class="toc-number">1.1.2.</span> <span class="toc-text">x64</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81-dll"><span class="toc-number">1.2.</span> <span class="toc-text">常见 dll</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windbg%E8%B0%83%E8%AF%95%E5%91%BD%E4%BB%A4"><span class="toc-number">1.3.</span> <span class="toc-text">windbg调试命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.4.</span> <span class="toc-text">常见结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PEB"><span class="toc-number">1.4.1.</span> <span class="toc-text">PEB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TEB"><span class="toc-number">1.4.2.</span> <span class="toc-text">TEB</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SEH"><span class="toc-number">1.4.3.</span> <span class="toc-text">SEH</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E4%BF%9D%E6%8A%A4"><span class="toc-number">1.5.</span> <span class="toc-text">常见保护</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DEP"><span class="toc-number">1.5.1.</span> <span class="toc-text">DEP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ASLR"><span class="toc-number">1.5.2.</span> <span class="toc-text">ASLR</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#GS"><span class="toc-number">1.5.3.</span> <span class="toc-text">GS</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CheckStackVars"><span class="toc-number">1.5.4.</span> <span class="toc-text">CheckStackVars</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SEHOP"><span class="toc-number">1.5.5.</span> <span class="toc-text">SEHOP</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SafeSEH"><span class="toc-number">1.5.6.</span> <span class="toc-text">SafeSEH</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CFG"><span class="toc-number">1.5.7.</span> <span class="toc-text">CFG</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PROCESS-MITIGATION-CHILD-PROCESS-POLICY"><span class="toc-number">1.5.8.</span> <span class="toc-text">PROCESS_MITIGATION_CHILD_PROCESS_POLICY</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windows-IO-FILE"><span class="toc-number">1.6.</span> <span class="toc-text">windows IO_FILE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#windows-heap"><span class="toc-number">1.7.</span> <span class="toc-text">windows heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#windbg%E4%B8%8A%E7%9A%84%E5%A0%86%E7%9B%B8%E5%85%B3%E5%91%BD%E4%BB%A4"><span class="toc-number">1.7.1.</span> <span class="toc-text">windbg上的堆相关命令</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Windows-10%E4%B8%8B%E7%9A%84%E5%A0%86%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.7.2.</span> <span class="toc-text">Windows 10下的堆类型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#windows%E7%94%A8%E6%88%B7%E6%80%81%E8%BF%9B%E7%A8%8B%E5%A0%86"><span class="toc-number">1.7.3.</span> <span class="toc-text">windows用户态进程堆</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A0%86%E7%AE%A1%E7%90%86%E5%B8%B8%E8%A7%81%E5%87%BD%E6%95%B0"><span class="toc-number">1.7.4.</span> <span class="toc-text">堆管理常见函数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#HeapCreate"><span class="toc-number">1.7.4.1.</span> <span class="toc-text">HeapCreate</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HeapAlloc-HeapFree"><span class="toc-number">1.7.4.2.</span> <span class="toc-text">HeapAlloc&#x2F;HeapFree</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#VirtualAlloc-VirtualFree"><span class="toc-number">1.7.4.3.</span> <span class="toc-text">VirtualAlloc &#x2F; VirtualFree</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#malloc-free"><span class="toc-number">1.7.4.4.</span> <span class="toc-text">malloc &#x2F; free</span></a></li></ol></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&text=windows 学习（一）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&is_video=false&description=windows 学习（一）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&title=windows 学习（一）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&name=windows 学习（一）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/04/2025-10-4-learning_windows_pwn_1/&t=windows 学习（一）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

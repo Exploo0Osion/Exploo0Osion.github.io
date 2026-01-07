@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="windowsNT HeapNT_Heap可以分为两个部分  back_end, 后端分配器是主要的堆管理结构, 负责大多数内存管理操作 front_end, 前端分配器为了提高小块内存分配的速度, 对高频小内存分配进行优化, Windows 使用 LFH(Low Fragmentation Heap) 作为主要的前端分配器   12345678910111213141516171819202">
+<meta property="og:type" content="article">
+<meta property="og:title" content="windows 学习（二）">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="windowsNT HeapNT_Heap可以分为两个部分  back_end, 后端分配器是主要的堆管理结构, 负责大多数内存管理操作 front_end, 前端分配器为了提高小块内存分配的速度, 对高频小内存分配进行优化, Windows 使用 LFH(Low Fragmentation Heap) 作为主要的前端分配器   12345678910111213141516171819202">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759824981718.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759827041548.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759827663746.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759827677806.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759831326041.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759903256842.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759909553929.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759917256615.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764555740216.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764555139767.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764567797067.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764568101375.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764576906996.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764636569750.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764637028567.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1764637185001.png">
+<meta property="article:published_time" content="2025-10-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T08:05:12.058Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-10-7-learning_windows_pwn_2/1759824981718.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>windows 学习（二）</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2025/11/25/2025-11-25-learning_windows_pwn_3/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&text=windows 学习（二）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&is_video=false&description=windows 学习（二）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（二）&body=Check out this article: https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&name=windows 学习（二）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&t=windows 学习（二）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#NT-Heap"><span class="toc-number">1.1.</span> <span class="toc-text">NT Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E5%A0%86"><span class="toc-number">1.1.1.</span> <span class="toc-text">后端堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP"><span class="toc-number">1.1.1.1.1.</span> <span class="toc-text">_HEAP</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-ENTRY"><span class="toc-number">1.1.1.1.2.</span> <span class="toc-text">_HEAP_ENTRY</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LIST-LOOKUP"><span class="toc-number">1.1.1.1.3.</span> <span class="toc-text">_HEAP_LIST_LOOKUP</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D%E6%9C%BA%E5%88%B6-RtlAllocateHeap"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">分配机制(RtlAllocateHeap)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Free-RtlFreeHeap"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">Free (RtlFreeHeap)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFH%E5%A0%86"><span class="toc-number">1.1.2.</span> <span class="toc-text">LFH堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-1"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#FrontEndHeap%EF%BC%88-LFH-HEAP%EF%BC%89"><span class="toc-number">1.1.2.1.1.</span> <span class="toc-text">FrontEndHeap（_LFH_HEAP）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Buckets%EF%BC%88-HEAP-BUCKET%EF%BC%89"><span class="toc-number">1.1.2.1.2.</span> <span class="toc-text">Buckets（_HEAP_BUCKET）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#UserBlocks%EF%BC%88-HEAP-USERDATA-HEADER%EF%BC%89"><span class="toc-number">1.1.2.1.3.</span> <span class="toc-text">UserBlocks（_HEAP_USERDATA_HEADER）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-ENTRY-1"><span class="toc-number">1.1.2.1.4.</span> <span class="toc-text">_HEAP_ENTRY</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.2.2.</span> <span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-Allocation"><span class="toc-number">1.1.2.3.</span> <span class="toc-text">分配 (Allocation)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-Free"><span class="toc-number">1.1.2.4.</span> <span class="toc-text">释放 (Free)</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Segment-Heap"><span class="toc-number">1.2.</span> <span class="toc-text">Segment Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#VS-%E5%A0%86"><span class="toc-number">1.2.1.</span> <span class="toc-text">VS 堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-2"><span class="toc-number">1.2.1.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#Segment-Heap-1"><span class="toc-number">1.2.1.1.1.</span> <span class="toc-text">_Segment_Heap</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-VS-CONTEXT"><span class="toc-number">1.2.1.1.2.</span> <span class="toc-text">_HEAP_VS_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RtlpHpHeapGlobals%EF%BC%88-RTLP-HP-HEAP-GLOBALS%EF%BC%89"><span class="toc-number">1.2.1.1.3.</span> <span class="toc-text">RtlpHpHeapGlobals（_RTLP_HP_HEAP_GLOBALS）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Allocated-Freed-Chunk"><span class="toc-number">1.2.1.1.4.</span> <span class="toc-text">Allocated &#x2F; Freed Chunk</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D"><span class="toc-number">1.2.1.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE"><span class="toc-number">1.2.1.3.</span> <span class="toc-text">释放</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFH%E5%A0%86-1"><span class="toc-number">1.2.2.</span> <span class="toc-text">LFH堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-3"><span class="toc-number">1.2.2.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-CONTEXT"><span class="toc-number">1.2.2.1.1.</span> <span class="toc-text">_HEAP_LFH_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-BUCKET"><span class="toc-number">1.2.2.1.2.</span> <span class="toc-text">_HEAP_LFH_BUCKET</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-SUBSEGMENT-OWNER"><span class="toc-number">1.2.2.1.3.</span> <span class="toc-text">_HEAP_LFH_SUBSEGMENT_OWNER</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-SUBSEGMENT"><span class="toc-number">1.2.2.1.4.</span> <span class="toc-text">_HEAP_LFH_SUBSEGMENT</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-1"><span class="toc-number">1.2.2.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-1"><span class="toc-number">1.2.2.3.</span> <span class="toc-text">释放</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E5%A0%86-1"><span class="toc-number">1.2.3.</span> <span class="toc-text">后端堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.2.3.1.</span> <span class="toc-text">相关数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-SEG-CONTEXT"><span class="toc-number">1.2.3.1.1.</span> <span class="toc-text">_HEAP_SEG_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-PAGE-SEGMENT"><span class="toc-number">1.2.3.1.2.</span> <span class="toc-text">_HEAP_PAGE_SEGMENT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-PAGE-RANGE-DESCRIPTOR"><span class="toc-number">1.2.3.1.3.</span> <span class="toc-text">_HEAP_PAGE_RANGE_DESCRIPTOR</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-2"><span class="toc-number">1.2.3.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-2"><span class="toc-number">1.2.3.3.</span> <span class="toc-text">释放</span></a></li></ol></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        windows 学习（二）
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-10-06T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-10-07</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="windows"><a href="#windows" class="headerlink" title="windows"></a>windows</h1><h2 id="NT-Heap"><a href="#NT-Heap" class="headerlink" title="NT Heap"></a>NT Heap</h2><p>NT_Heap可以分为两个部分</p>
+<ol>
+<li>back_end, 后端分配器是主要的堆管理结构, 负责大多数内存管理操作</li>
+<li>front_end, 前端分配器为了提高小块内存分配的速度, 对高频小内存分配进行优化, Windows 使用 <strong>LFH(Low Fragmentation Heap)</strong> 作为主要的前端分配器</li>
+</ol>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759824981718.png" alt="1759824981718"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;Windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">void</span>* ptr[<span class="number">30</span>] = &#123; <span class="literal">NULL</span> &#125;;</span><br><span class="line">    HANDLE hHeap = HeapCreate(<span class="number">0</span>, <span class="number">0x10000</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">30</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        ptr[i] = HeapAlloc(hHeap, <span class="number">0</span>, <span class="number">0xF0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">30</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[+] chunk[%02d] address is: %p\n&quot;</span>, i, ptr[i]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">[+] chunk[00] address is: 000002C55E500860</span><br><span class="line">[+] chunk[01] address is: 000002C55E500960</span><br><span class="line">[+] chunk[02] address is: 000002C55E500A60</span><br><span class="line">[+] chunk[03] address is: 000002C55E500B60</span><br><span class="line">[+] chunk[04] address is: 000002C55E500C60</span><br><span class="line">[+] chunk[05] address is: 000002C55E500D60</span><br><span class="line">[+] chunk[06] address is: 000002C55E500E60</span><br><span class="line">[+] chunk[07] address is: 000002C55E500F60</span><br><span class="line">[+] chunk[08] address is: 000002C55E501060</span><br><span class="line">[+] chunk[09] address is: 000002C55E501160</span><br><span class="line">[+] chunk[10] address is: 000002C55E501260</span><br><span class="line">[+] chunk[11] address is: 000002C55E501360</span><br><span class="line">[+] chunk[12] address is: 000002C55E501460</span><br><span class="line">[+] chunk[13] address is: 000002C55E501560</span><br><span class="line">[+] chunk[14] address is: 000002C55E501660</span><br><span class="line">[+] chunk[15] address is: 000002C55E501760</span><br><span class="line">[+] chunk[16] address is: 000002C55E501860</span><br><span class="line">[+] chunk[17] address is: 000002C55E500750</span><br><span class="line">[+] chunk[18] address is: 000002C55E504D70</span><br><span class="line">[+] chunk[19] address is: 000002C55E505970</span><br><span class="line">[+] chunk[20] address is: 000002C55E504570</span><br><span class="line">[+] chunk[21] address is: 000002C55E505870</span><br><span class="line">[+] chunk[22] address is: 000002C55E504A70</span><br><span class="line">[+] chunk[23] address is: 000002C55E504970</span><br><span class="line">[+] chunk[24] address is: 000002C55E505070</span><br><span class="line">[+] chunk[25] address is: 000002C55E504470</span><br><span class="line">[+] chunk[26] address is: 000002C55E504270</span><br><span class="line">[+] chunk[27] address is: 000002C55E505C70</span><br><span class="line">[+] chunk[28] address is: 000002C55E505570</span><br><span class="line">[+] chunk[29] address is: 000002C55E505270</span><br></pre></td></tr></table></figure>
+
+<p>可以看到前17个堆块的地址间隔固定，后面的chunk地址开始变得随机，是由Front-End分配的。</p>
+<p>但当使用 <code>HeapAlloc(hHeap, 1, 0xF0);</code>时chunk地址的间隔固定了，原因是 <code>HEAP_NO_SERIALIZE</code>告诉堆管理器<strong>不要</strong>在这次分配时对堆加锁，表明了目前系统是单线程环境，LFH 这种专门用来解决“多线程抢锁问题”的复杂机制就失去了存在的意义。为了节省资源和降低复杂度，Windows 就会直接关闭 LFH。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;Windows.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">void</span>* ptr[<span class="number">30</span>] = &#123; <span class="literal">NULL</span> &#125;;</span><br><span class="line">   <span class="comment">// HANDLE hHeap = HeapCreate(0, 0x10000, 0);</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">30</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        ptr[i] = <span class="built_in">malloc</span>(<span class="number">0xf0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; <span class="number">30</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;[+] chunk[%02d] address is: %p\n&quot;</span>, i, ptr[i]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果将HeapAlloc改成malloc的话，堆地址呈现非常混乱，原因是malloc它通常底层调用 <code>HeapAlloc(GetProcessHeap(), ...)</code>。<strong>进程默认堆是非常“脏”的</strong> 。在你进入 <code>main</code> 函数之前，系统初始化、加载 DLL、CRT 初始化都已经在这个堆上进行了成千上万次分配和释放。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">[+] chunk[00] address is: 0000021637658B90</span><br><span class="line">[+] chunk[01] address is: 0000021637662860</span><br><span class="line">[+] chunk[02] address is: 0000021637662960</span><br><span class="line">[+] chunk[03] address is: 0000021637662A60</span><br><span class="line">[+] chunk[04] address is: 0000021637662FD0</span><br><span class="line">[+] chunk[05] address is: 00000216376630D0</span><br><span class="line">[+] chunk[06] address is: 00000216376631D0</span><br><span class="line">[+] chunk[07] address is: 00000216376632D0</span><br><span class="line">[+] chunk[08] address is: 00000216376633D0</span><br><span class="line">[+] chunk[09] address is: 00000216376634D0</span><br><span class="line">[+] chunk[10] address is: 00000216376635D0</span><br><span class="line">[+] chunk[11] address is: 00000216376636D0</span><br><span class="line">[+] chunk[12] address is: 00000216376637D0</span><br><span class="line">[+] chunk[13] address is: 0000021637663D20</span><br><span class="line">[+] chunk[14] address is: 0000021637663B20</span><br><span class="line">[+] chunk[15] address is: 0000021637664A20</span><br><span class="line">[+] chunk[16] address is: 0000021637665420</span><br><span class="line">[+] chunk[17] address is: 0000021637665220</span><br><span class="line">[+] chunk[18] address is: 0000021637664D20</span><br><span class="line">[+] chunk[19] address is: 0000021637664920</span><br><span class="line">[+] chunk[20] address is: 0000021637665520</span><br><span class="line">[+] chunk[21] address is: 0000021637665620</span><br><span class="line">[+] chunk[22] address is: 0000021637665320</span><br><span class="line">[+] chunk[23] address is: 0000021637665720</span><br><span class="line">[+] chunk[24] address is: 0000021637663920</span><br><span class="line">[+] chunk[25] address is: 0000021637664720</span><br><span class="line">[+] chunk[26] address is: 0000021637664820</span><br><span class="line">[+] chunk[27] address is: 0000021637663C20</span><br><span class="line">[+] chunk[28] address is: 0000021637663A20</span><br><span class="line">[+] chunk[29] address is: 0000021637664B20</span><br></pre></td></tr></table></figure>
+
+<h3 id="后端堆"><a href="#后端堆" class="headerlink" title="后端堆"></a>后端堆</h3><h4 id="相关结构体"><a href="#相关结构体" class="headerlink" title="相关结构体"></a>相关结构体</h4><h5 id="HEAP"><a href="#HEAP" class="headerlink" title="_HEAP"></a>_HEAP</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//0x2c0 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">HEAP</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_SEGMENT</span> <span class="title">Segment</span>;</span>                                       <span class="comment">//0x0</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">        &#123;</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span> <span class="title">Entry</span>;</span>                                       <span class="comment">//0x0</span></span><br><span class="line">            ULONG SegmentSignature;                                         <span class="comment">//0x10</span></span><br><span class="line">            ULONG SegmentFlags;                                             <span class="comment">//0x14</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">SegmentListEntry</span>;</span>                            <span class="comment">//0x18</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP</span>* <span class="title">Heap</span>;</span>                                             <span class="comment">//0x28</span></span><br><span class="line">            VOID* BaseAddress;                                              <span class="comment">//0x30</span></span><br><span class="line">            ULONG NumberOfPages;                                            <span class="comment">//0x38</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span>* <span class="title">FirstEntry</span>;</span>                                 <span class="comment">//0x40</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span>* <span class="title">LastValidEntry</span>;</span>                             <span class="comment">//0x48</span></span><br><span class="line">            ULONG NumberOfUnCommittedPages;                                 <span class="comment">//0x50</span></span><br><span class="line">            ULONG NumberOfUnCommittedRanges;                                <span class="comment">//0x54</span></span><br><span class="line">            USHORT SegmentAllocatorBackTraceIndex;                          <span class="comment">//0x58</span></span><br><span class="line">            USHORT Reserved;                                                <span class="comment">//0x5a</span></span><br><span class="line">            <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">UCRSegmentList</span>;</span>                              <span class="comment">//0x60</span></span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    ULONG Flags;                                                            <span class="comment">//0x70</span></span><br><span class="line">    ULONG ForceFlags;                                                       <span class="comment">//0x74</span></span><br><span class="line">    ULONG CompatibilityFlags;                                               <span class="comment">//0x78</span></span><br><span class="line">    ULONG EncodeFlagMask;                                                   <span class="comment">//0x7c</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span> <span class="title">Encoding</span>;</span>                                            <span class="comment">//0x80</span></span><br><span class="line">    ULONG Interceptor;                                                      <span class="comment">//0x90</span></span><br><span class="line">    ULONG VirtualMemoryThreshold;                                           <span class="comment">//0x94</span></span><br><span class="line">    ULONG Signature;                                                        <span class="comment">//0x98</span></span><br><span class="line">    ULONGLONG SegmentReserve;                                               <span class="comment">//0xa0</span></span><br><span class="line">    ULONGLONG SegmentCommit;                                                <span class="comment">//0xa8</span></span><br><span class="line">    ULONGLONG DeCommitFreeBlockThreshold;                                   <span class="comment">//0xb0</span></span><br><span class="line">    ULONGLONG DeCommitTotalFreeThreshold;                                   <span class="comment">//0xb8</span></span><br><span class="line">    ULONGLONG TotalFreeSize;                                                <span class="comment">//0xc0</span></span><br><span class="line">    ULONGLONG MaximumAllocationSize;                                        <span class="comment">//0xc8</span></span><br><span class="line">    USHORT ProcessHeapsListIndex;                                           <span class="comment">//0xd0</span></span><br><span class="line">    USHORT HeaderValidateLength;                                            <span class="comment">//0xd2</span></span><br><span class="line">    VOID* HeaderValidateCopy;                                               <span class="comment">//0xd8</span></span><br><span class="line">    USHORT NextAvailableTagIndex;                                           <span class="comment">//0xe0</span></span><br><span class="line">    USHORT MaximumTagIndex;                                                 <span class="comment">//0xe2</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_TAG_ENTRY</span>* <span class="title">TagEntries</span>;</span>                                     <span class="comment">//0xe8</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">UCRList</span>;</span>                                             <span class="comment">//0xf0</span></span><br><span class="line">    ULONGLONG AlignRound;                                                   <span class="comment">//0x100</span></span><br><span class="line">    ULONGLONG AlignMask;                                                    <span class="comment">//0x108</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">VirtualAllocdBlocks</span>;</span>                                 <span class="comment">//0x110</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">SegmentList</span>;</span>                                         <span class="comment">//0x120</span></span><br><span class="line">    USHORT AllocatorBackTraceIndex;                                         <span class="comment">//0x130</span></span><br><span class="line">    ULONG NonDedicatedListLength;                                           <span class="comment">//0x134</span></span><br><span class="line">    VOID* BlocksIndex;                                                      <span class="comment">//0x138</span></span><br><span class="line">    VOID* UCRIndex;                                                         <span class="comment">//0x140</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_PSEUDO_TAG_ENTRY</span>* <span class="title">PseudoTagEntries</span>;</span>                        <span class="comment">//0x148</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">FreeLists</span>;</span>                                           <span class="comment">//0x150</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_LOCK</span>* <span class="title">LockVariable</span>;</span>                                        <span class="comment">//0x160</span></span><br><span class="line">    LONG (*CommitRoutine)(VOID* arg1, VOID** arg2, ULONGLONG* arg3);        <span class="comment">//0x168</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> _<span class="title">RTL_RUN_ONCE</span> <span class="title">StackTraceInitVar</span>;</span>                                  <span class="comment">//0x170</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">RTL_HEAP_MEMORY_LIMIT_DATA</span> <span class="title">CommitLimitData</span>;</span>                     <span class="comment">//0x178</span></span><br><span class="line">    VOID* FrontEndHeap;                                                     <span class="comment">//0x198</span></span><br><span class="line">    USHORT FrontHeapLockCount;                                              <span class="comment">//0x1a0</span></span><br><span class="line">    UCHAR FrontEndHeapType;                                                 <span class="comment">//0x1a2</span></span><br><span class="line">    UCHAR RequestedFrontEndHeapType;                                        <span class="comment">//0x1a3</span></span><br><span class="line">    WCHAR* FrontEndHeapUsageData;                                           <span class="comment">//0x1a8</span></span><br><span class="line">    USHORT FrontEndHeapMaximumIndex;                                        <span class="comment">//0x1b0</span></span><br><span class="line">    <span class="keyword">volatile</span> UCHAR FrontEndHeapStatusBitmap[<span class="number">129</span>];                           <span class="comment">//0x1b2</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_COUNTERS</span> <span class="title">Counters</span>;</span>                                         <span class="comment">//0x238</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_TUNING_PARAMETERS</span> <span class="title">TuningParameters</span>;</span>                        <span class="comment">//0x2b0</span></span><br><span class="line">&#125;; </span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>_HEAP</code> 是堆管理的最核心结构，和 linux glibc 的 <code>main_arena</code> 作用类似。每一个 HEAP 都有一个 <code>_HEAP</code> 结构，存在于该 HEAP 的开头。</p>
+<p>根据下面的图片理解其中的一部分参数</p>
+<ul>
+<li><code>EncodeFlagMask</code>：Heap 初始化后会设置为 0x100000 ，用于判断是否要加密该 heap 空间中每个堆的 chunk_header 。</li>
+<li><code>Encoding</code>（<code>_Heap_Entry</code>）：用于与 chunk_header 做异或的 cookies；所有分配的 chunk 的 chunk_header 都会与 <code>Encoding</code> 进行异或，然后在存入内存中。</li>
+<li><code>VirtualAllocdBlocks</code>：一个双向链表的 dummy head ，存放着 <code>Flink</code> 和 <code>Blink</code> ，将 <code>VirtualAllocate</code> 出来的 chunk 链接起来。</li>
+<li><code>BlocksIndex</code>（<code>_Heap_LIST_LOOKUP</code>）：Back-End 中用于管理后端管理器中的 chunk 。</li>
+<li><code>FreeList</code>（<code>_Heap_Entry</code>）：连接 Back-End 中的所有 free chunk ，类似 unsorted bin 。</li>
+<li><code>FrontEndHeap</code>：指向管理 FrontEnd 的 heap 结构。</li>
+<li><code>FrontEndHeapUsageData</code>：指向一个对应各大小 chunk 的数组，记录各种大小 chunk 的使用次数，到达某个程度时会开启该对应大小 chunk 的 Front-End 分配器。<strong>如果开启 LFH 后对应的 <code>FrontEndHeapUsageData</code> 是 <code>SegmentInfoArrays</code> 的下标。</strong></li>
+<li><code>FrontEndHeapStatusBitmap</code>：非常重要。是一个 bitmap 数组，每一项长度为 1 字节，用来记录某个 size 是否开启了 LFH 。判断方式是 <code>_HEAP.FrontEndHeapStatusBitmap[(size &gt;&gt; 4) &gt;&gt; 3] &amp; (1 &lt;&lt; ((size &gt;&gt; 4) &amp; 7))</code> 是否为 1 ，如果是 1 则说明对应 size 开启了 LFH 。</li>
+</ul>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759827041548.png" alt="1759827041548"></p>
+<h5 id="HEAP-ENTRY"><a href="#HEAP-ENTRY" class="headerlink" title="_HEAP_ENTRY"></a>_HEAP_ENTRY</h5><p>最普通的_HEAP_ENTRY结构体如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span>&#123;</span></span><br><span class="line">    <span class="type">void</span> * PreviousBlockPrivateData;</span><br><span class="line">    Uint2B Size;</span><br><span class="line">    Uchar Flags;</span><br><span class="line">    Uchar SmallTagIndex;</span><br><span class="line">    Uint2B PreviousSize;</span><br><span class="line">    Uchar SegmentOffset;</span><br><span class="line">    Uchar Unusedbyte;</span><br><span class="line">    Uchar UserData[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>与linux类似, 也是头部 + User Data的形式，</p>
+<p>Allocated chunk图解：</p>
+<ul>
+<li><p><code>PreviousBlockPrivateData</code>：8 字节，可为前一块 chunk 的 data ，因为 chunk 必须对齐。</p>
+</li>
+<li><p><code>Size</code>: chunk 的大小，为实际大小右移 4bit 后的值。比如大小为 0x80 的 chunk 的 <code>Size</code> 值为 0x8 。</p>
+</li>
+<li><p><code>Flags</code>: 表示该chunk的状态：</p>
+<ul>
+<li><code>HEAP_ENTRY_BUSY(01)</code> 堆块处于占用状态</li>
+<li><code>HEAP_ENTRY_EXTRA_PRESENT(02)</code> 该块存在额外的描述 <code>_HEAP_ENTRY_EXTRA</code></li>
+<li><code>HEAP_ENTRY_FILE_PATTERN(03)</code> 使用固定模式填充堆块<ul>
+<li><code>HEAP_ENTRY_VIRTUAL_ALLOC(08)</code> 通过 virtual allocation 虚拟分配的堆块</li>
+</ul>
+</li>
+<li><code>HEAP_ENTRY_LAST_ENTRY(10)</code> 表示是该段的最后一个堆块</li>
+</ul>
+</li>
+<li><p><code>SmallTagIndex</code>: 前 3 个字节异或后的值，用于验证。</p>
+</li>
+<li><p><code>PreviousSize</code>: 前⼀个 chunk 的大小，为实际大小右移 4bit 后的值。</p>
+</li>
+<li><p><code>SegmentOffset</code>: 在某种情况下用来寻找 Heap 的。</p>
+</li>
+<li><p><code>Unusedbytes</code>：整个 chunk 的大小减去用户 malloc 的大小，因为如果 chunk 是在使用状态 <code>Unusedbytes</code> 一定不为 0 ，因此可以判断 chunk 是否空闲（&amp;0x3F 是否为 0）。另外这个值还有一个 0x80 的标志位也可以用来判断 chunk 的状态是前端堆还是后端堆。</p>
+<ul>
+<li>在freed的时候, 恒为0</li>
+</ul>
+</li>
+</ul>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759827663746.png" alt="1759827663746"></p>
+<p>chunk_header在内存中是加密的，解密需要和 <code>_HEAP-&gt;Encoding</code>进行异或</p>
+<p>Freed chunk图解：</p>
+<p>多了一个 <code>_LIST_ENTRY</code> 结构</p>
+<ul>
+<li><code>Flags</code> 为 0 表示 freed</li>
+<li><code>UnusedBytes</code> （&amp;0x3f）始终为 0</li>
+</ul>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759827677806.png" alt="1759827677806"></p>
+<h5 id="HEAP-LIST-LOOKUP"><a href="#HEAP-LIST-LOOKUP" class="headerlink" title="_HEAP_LIST_LOOKUP"></a>_HEAP_LIST_LOOKUP</h5><p>(BlocksIndex)_HEAP_LIST_LOOKUP用来管理各种不同大小的 freed chunk ，能快速的找到合适的 chunk</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//0x38 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_LIST_LOOKUP</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_LIST_LOOKUP</span>* <span class="title">ExtendedLookup</span>;</span>                               <span class="comment">//0x0</span></span><br><span class="line">    ULONG ArraySize;                                                        <span class="comment">//0x8</span></span><br><span class="line">    ULONG ExtraItem;                                                        <span class="comment">//0xc</span></span><br><span class="line">    ULONG ItemCount;                                                        <span class="comment">//0x10</span></span><br><span class="line">    ULONG OutOfRangeItems;                                                  <span class="comment">//0x14</span></span><br><span class="line">    ULONG BaseIndex;                                                        <span class="comment">//0x18</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span>* <span class="title">ListHead</span>;</span>                                           <span class="comment">//0x20</span></span><br><span class="line">    ULONG* ListsInUseUlong;                                                 <span class="comment">//0x28</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span>** <span class="title">ListHints</span>;</span>                                         <span class="comment">//0x30</span></span><br><span class="line">&#125;; </span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>ExtendedLookup (Ptr64 _HEAP_LIST_LOOKUP)</code>：指向下一个 <code>BlocksIndex</code>，通常下一个 <code>BlocksIndex</code>会管理更大的 chunk 。</li>
+<li><code>ArraySize</code>：该结构会管理最大 chunk 的大小 + 0x10 。上面例子中 <code>ArraySize</code> 为 0x80 但由于右移实际是 0x800 。</li>
+<li><code>ItemCount</code>：4 字节，目前该结构所管理的 chunk 数。</li>
+<li><code>OutofRangeItems</code>：超出该结构所管理大小的 chunk 的数量。</li>
+<li><code>BaseIndex</code>：该结构所管理的 chunk 的起始 index ，将 <code>(Aligned(size) &gt;&gt; 4) - BaseIndex</code> 作为 <code>ListHint</code> 中查找的下标。通常下一个 <code>BlocksIndex</code> 将上一个 <code>BlocksIndex</code> 的 <code>ArraySize</code> 作为 <code>BaseIndex</code> 。</li>
+<li><code>ListHead</code>：指向 <code>_HEAP</code> 的 <code>FreeList</code> 。</li>
+<li><code>ListsInUseUlong</code>：用在判断 <code>ListHint</code> 中是否有适合大小的 chunk ，是一个 bitmap 。</li>
+<li><code>ListHint</code>：十分重要，用来指向对应大小的 chunk array ，其目的就在于更快速找到适合大小的 chunk ，0x10 大小为一个间隔。可以类比linux ptmalloc的tcache bin, 只不过chunk的组织仍然通过双向链表维护</li>
+</ul>
+<h4 id="分配机制-RtlAllocateHeap"><a href="#分配机制-RtlAllocateHeap" class="headerlink" title="分配机制(RtlAllocateHeap)"></a>分配机制(RtlAllocateHeap)</h4><p>根据分配大小主要有三种：</p>
+<ul>
+<li><strong>case1</strong> : <code>size &lt;= 0x4000</code></li>
+<li><strong>case2</strong> : <code>0x4000 &lt; size &lt;= 0xff000</code></li>
+<li><strong>case3</strong> : <code>size &gt; 0xff000</code></li>
+</ul>
+<p>case1：</p>
+<p>还是需要这个图进行理解</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759831326041.png" alt="1759831326041"></p>
+<ul>
+<li>检查是否有该 <code>Size</code> 对应的 <code>FrontEndHeapStatusBitmap</code>，判断是否启动了LFH</li>
+<li>遍历 <code>BlocksIndex</code> 链表，找到第一个 <code>ArraySize</code> 大于 <code>Size</code> 的 <code>BlocksIndex</code> ，然后找到对应的 <code>ListHint</code> ，即 <code>BlocksIndex-&gt;ListHints[Size - BlocksIndex-&gt;BaseIndex]</code> 。调用 <code>RtlpAllocateHeap</code> 函数分配内存。</li>
+<li>查看对应的 <code>ListHint</code> 中是否有值（也就是ListHint数组里否有对应 size 的 freed chunk）：<ul>
+<li><p>如果刚好有值，就检查该 chunk 的 <code>Flink</code> （下一个freed chunk）是否是同样 size 的 chunk ：</p>
+<ul>
+<li>若是则将 <code>Flink</code> 写到对应的 <code>ListHint</code> 中。</li>
+<li>若否则清空对应 <code>ListHint</code> 。</li>
+</ul>
+<p>最后将该 chunk 从 <code>Freelist</code> 中 unlink 出来（同时header也会恢复正常）。</p>
+</li>
+<li><p>如果对应的 <code>ListHint</code> 中本身就没有值，就从比较大的 <code>ListHint</code> 中找：</p>
+<ul>
+<li>如果找到了，就以上述同样的方式处理该 <code>ListHint</code> ，并 unlink 该 chunk ，之后对其进行切割，剩下的重新放入 <code>FreeList</code> ，如果可以放进 <code>ListHint</code> 就会放进去，再 encode header 。</li>
+<li>如果没较大的 <code>ListHint</code> 也都是空的，那么尝试 <code>ExtendedHeap</code> 加大堆空间，再从 extend 出来的 chunk 拿，接着一样切割，放回 <code>ListHIint</code> ，encode header 。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>case2：没有LFH检查，其他和case1一样</p>
+<p>case3：直接调用 <code>ZwAllocateVirtualMemroy</code> 进行分配，类似于 linux 下的 <code>mmap</code> 直接给一大块地址，并且插入 <code>_HEAP-&gt;VirtualAllocdBlocks</code> 中。</p>
+<h4 id="Free-RtlFreeHeap"><a href="#Free-RtlFreeHeap" class="headerlink" title="Free (RtlFreeHeap)"></a>Free (RtlFreeHeap)</h4><ul>
+<li>调用 <code>RtlpValidateHeapEntry</code> 对要释放的 chunk 进行一系列的检查：<ul>
+<li>释放的 <code>_HEAP_ENTRY</code> 是否为 NULL</li>
+<li>释放的 <code>_HEAP_ENTRY</code> 地址是否关于 0x10 对齐</li>
+<li>通过 <code>UnusedBytes &amp; 0x3F</code> 是否为 0 判断 <code>_HEAP_ENTRY</code> 是否已被释放过，相当于判断Double Free</li>
+<li>检查校验位 <code>SmallTagIndex</code> （先当于checksum）</li>
+<li>如果 <code>UnusedBytes</code> 为 4 即通过 <code>ZwAllocateVirtualMemroy</code> 分配的内存，则判断整个 <code>_HEAP_VIRTUAL_ALLOC_ENTRY</code> 是否关于 0x1000 对齐</li>
+<li>如果 <code>UnusedBytes</code> 不为 4 则通过 <code>SegmentOffset</code> 找到 <code>_HEAP</code> 然后判断 <code>_HEAP_ENTRY</code> 是否在 <code>[Heap-&gt;Segment.FirstEntry, Heap-&gt;Segment.LastValidEntry)</code> 范围内</li>
+</ul>
+</li>
+<li>调用 <code>RtlFreeHeap</code> ，进而调用 <code>RtlpFreeHeapInternal</code> ，通过 <code>Heap-&gt;Segment.SegmentSignature</code> 判断是否为 Segment Heap ，如果是则单独处理，否则继续执行。</li>
+<li>判断地址是否关于 0x10 对齐以及通过 <code>UnusedBytes &amp; 0x3F</code> 是否为 0 判断 <code>_HEAP_ENTRY</code> 是否已被释放过。（重复？）</li>
+<li>根据 <code>UnusedBytes</code> 是否小于 0 （0x80 是否置位）判断是否是 LFH 堆，如果不是则调用后端堆释放的核心函数 <code>RtlpFreeHeap</code> 。</li>
+<li>解密 <code>_HEAP_ENTRY</code> 并校验 <code>SmallTagIndex</code> ，根据 chunk 大小找到对应的 <code>BlocksIndex</code> 。</li>
+<li>根据 <code>UnusedBytes</code> 是否为 4 判断是否是通过 <code>ZwAllocateVirtualMemroy</code> 分配的内存。如果是则检查该 chunk 的 <code>_HEAP_ENTRY-&gt;Flink-&gt;Blink == _HEAP_ENTRY-&gt;Blink-&gt;Flink == &amp;_HEAP_ENTRY</code> 并从 <code>_HEAP-&gt;VirtualAllocdBlocks</code> 中移除，接着使用 <code>RtlpSecMemFreeVirtualMemory</code> 将 chunk 整个 munmap 掉。（类似于unlink检查）</li>
+<li>如果 chunk 大小在 LFH 堆的范围内（<code>_HEAP_ENTRY-&gt;Size &lt; _HEAP-&gt;FrontEndHeapMaximumIndex</code>），会将对应的 <code>FrontEndHeapUsageData -= 1</code>（并不是0x21）。</li>
+<li>接着判断前后的 chunk 是否是 freed 的状态（根据 <code>_HEAP_ENTRY.Flags</code> 的 1 是否置位判断），如果是的话就检查前后的 freed chunk （校验 <code>SmallTagIndex</code> 以及 <code>_HEAP_ENTRY-&gt;Flink-&gt;Blink == _HEAP_ENTRY-&gt;Blink-&gt;Flink == &amp;_HEAP_ENTRY</code>）然后将前后的 freed chunk 从 <code>FreeList</code> 中 unlink 下来（与上面的方式一样更新 <code>ListHint</code>），再进行合并。</li>
+<li>合并完之后更新 <code>Size</code> 和 <code>PreviousSize</code> ，判断一下 <code>Size</code> 较大的情况，然后把合并好的 chunk 插入到 <code>ListHint</code> 中；插入时也会对 <code>FreeList</code> 进行检查（但是此检查不会触发 abort ，原因在于没有做 unlink 写入）。</li>
+</ul>
+<h3 id="LFH堆"><a href="#LFH堆" class="headerlink" title="LFH堆"></a>LFH堆</h3><p>当同一个大小的堆块分配次数过多的时候，除了从后端堆分配所需堆块外，还会额外分配一块很大的内存供前端堆使用，之后再次分配该大小的堆块的时候会从前端堆分配。</p>
+<h4 id="相关结构体-1"><a href="#相关结构体-1" class="headerlink" title="相关结构体"></a>相关结构体</h4><h5 id="FrontEndHeap（-LFH-HEAP）"><a href="#FrontEndHeap（-LFH-HEAP）" class="headerlink" title="FrontEndHeap（_LFH_HEAP）"></a>FrontEndHeap（_LFH_HEAP）</h5><p>通过 <code>_HEAP</code> 的 <code>FrontEndHeap</code> 成员指针访问</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">ntdll!_LFH_HEAP</span><br><span class="line">   +0x000 Lock             : _RTL_SRWLOCK</span><br><span class="line">   +0x008 SubSegmentZones  : _LIST_ENTRY</span><br><span class="line">   +0x018 Heap             : Ptr64 Void</span><br><span class="line">   +0x020 NextSegmentInfoArrayAddress : Ptr64 Void</span><br><span class="line">   +0x028 FirstUncommittedAddress : Ptr64 Void</span><br><span class="line">   +0x030 ReservedAddressLimit : Ptr64 Void</span><br><span class="line">   +0x038 SegmentCreate    : Uint4B</span><br><span class="line">   +0x03c SegmentDelete    : Uint4B</span><br><span class="line">   +0x040 MinimumCacheDepth : Uint4B</span><br><span class="line">   +0x044 CacheShiftThreshold : Uint4B</span><br><span class="line">   +0x048 SizeInCache      : Uint8B</span><br><span class="line">   +0x050 RunInfo          : _HEAP_BUCKET_RUN_INFO</span><br><span class="line">   +0x060 UserBlockCache   : [12] _USER_MEMORY_CACHE_ENTRY</span><br><span class="line">   +0x2a0 MemoryPolicies   : _HEAP_LFH_MEM_POLICIES</span><br><span class="line">   +0x2a4 Buckets          : [129] _HEAP_BUCKET</span><br><span class="line">   +0x4a8 SegmentInfoArrays : [129] Ptr64 _HEAP_LOCAL_SEGMENT_INFO</span><br><span class="line">   +0x8b0 AffinitizedInfoArrays : [129] Ptr64 _HEAP_LOCAL_SEGMENT_INFO</span><br><span class="line">   +0xcb8 SegmentAllocator : Ptr64 _SEGMENT_HEAP</span><br><span class="line">   +0xcc0 LocalData        : [1] _HEAP_LOCAL_DATA</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>Heap</code>, 指向其对应的 <code>_HEAP</code>结构体</li>
+<li><code>Buckets</code>, 一个存放129个 <code>_HEAP_BUCKET</code>结构体的数组, 用来寻找配置大小对应到Block大小的阵列结构</li>
+<li><code>SegmentInfoArrays</code>, 一个存放129个 <code>_HEAP_LOCAL_SEGMENT_INFO</code>结构体指针的数组, 不同大小对应到不同的 <code>_HEAP_LOCAL_SEGMENT_INFO</code>结构体, 主要管理对应到的 <code>_HEAP_SUBSEGMENT</code>的信息</li>
+<li><code>LocalData</code>, 一个 <code>_HEAP_LOCAL_DATA</code>结构体</li>
+</ul>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759903256842.png" alt="1759903256842"></p>
+<h5 id="Buckets（-HEAP-BUCKET）"><a href="#Buckets（-HEAP-BUCKET）" class="headerlink" title="Buckets（_HEAP_BUCKET）"></a>Buckets（_HEAP_BUCKET）</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">ntdll!_HEAP_BUCKET</span><br><span class="line">   +0x000 BlockUnits       : Uint2B</span><br><span class="line">   +0x002 SizeIndex        : UChar</span><br><span class="line">   +0x003 UseAffinity      : Pos 0, 1 Bit</span><br><span class="line">   +0x003 DebugFlags       : Pos 1, 2 Bits</span><br><span class="line">   +0x003 Flags            : UChar</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>BlockUnits</code>, 要分配出去的一个block的大小, 存放 <code>size &gt;&gt; 4</code>，对应SegmentInfoArray中_HEAP_SUBSEGMENT结构体中的BlockSize</li>
+<li><code>SizeIndex</code>, bucket下标 ，<code>SegmentInfoArrays</code> 对应位置的 <code>BucketIndex</code></li>
+</ul>
+<h5 id="UserBlocks（-HEAP-USERDATA-HEADER）"><a href="#UserBlocks（-HEAP-USERDATA-HEADER）" class="headerlink" title="UserBlocks（_HEAP_USERDATA_HEADER）"></a>UserBlocks（_HEAP_USERDATA_HEADER）</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">0:017&gt; dx -r1 ((ntdll!_HEAP_USERDATA_HEADER *)0x20793447a10)</span><br><span class="line">((ntdll!_HEAP_USERDATA_HEADER *)0x20793447a10)                 : 0x20793447a10 [Type: _HEAP_USERDATA_HEADER *]</span><br><span class="line">    [+0x000] SFreeListEntry   [Type: _SINGLE_LIST_ENTRY]</span><br><span class="line">    [+0x000] SubSegment       : 0x2079341f200 [Type: _HEAP_SUBSEGMENT *]</span><br><span class="line">    [+0x008] Reserved         : 0x20793406330 [Type: void *]</span><br><span class="line">    [+0x010] SizeIndexAndPadding : 0xc [Type: unsigned long]</span><br><span class="line">    [+0x010] SizeIndex        : 0xc [Type: unsigned char]</span><br><span class="line">    [+0x011] GuardPagePresent : 0x0 [Type: unsigned char]</span><br><span class="line">    [+0x012] PaddingBytes     : 0x0 [Type: unsigned short]</span><br><span class="line">    [+0x014] Signature        : 0xf0e0d0c0 [Type: unsigned long]</span><br><span class="line">    [+0x018] EncodedOffsets   [Type: _HEAP_USERDATA_OFFSETS]</span><br><span class="line">    [+0x020] BusyBitmap       [Type: _RTL_BITMAP_EX]</span><br><span class="line">    [+0x030] BitmapData       [Type: unsigned __int64 [1]]</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p><code>SubSegment (_HEAP_SUBSEGMENT)</code>：指回对应的 <code>SubSegment</code></p>
+</li>
+<li><p><code>EncodedOffsets</code>：用来验证 chunk header 是否被修改过，由下面 4 个值异或：</p>
+<ul>
+<li><code>RtlpLFHKey</code>：进程创建时初始化的一个 8 字节随机数</li>
+<li><code>UserBlock</code> 的地址</li>
+<li><code>UserBlock</code> 对应的 <code>LowFragHeap</code> 的地址</li>
+<li><code>sizeof(UserBlocks) | ((0x10 * BlockIndex) &lt;&lt; 16)</code></li>
+</ul>
+<p>在释放一个 LFH chunk 时，NT Heap 会通过 <code>UserBlock ^ RtlpLFHKey ^ _SegmentInfoArray-&gt;EncodedOffsets ^ LowFragHeap</code> 计算出 <code>sizeof(UserBlocks) | ((0x10 * BlockIndex) &lt;&lt; 16)</code> 的值，进而计算出 chunk 的地址与要释放的 chunk 的地址进行比较，从而验证 chunk header 是否被修改过。</p>
+</li>
+<li><p><code>BusyBitmap</code>：记录 <code>UserBlock</code> 中在使用的 chunk 的 bitmap</p>
+</li>
+<li><p><code>Block</code>：LFH 返回给使用者的 chunk</p>
+</li>
+</ul>
+<h5 id="HEAP-ENTRY-1"><a href="#HEAP-ENTRY-1" class="headerlink" title="_HEAP_ENTRY"></a>_HEAP_ENTRY</h5><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">HEAP_ENTRY</span>&#123;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">void</span> * PreviousBlockPrivateData;</span><br><span class="line">    Uint4B SubSegmentCode;</span><br><span class="line">    Uint2B PreviousSize;</span><br><span class="line">    Uchar SegmentOffset;</span><br><span class="line">    Uchar Unusedbyte;</span><br><span class="line">    Uchar UserData[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>size</code>, <code>Flags</code>和 <code>SmallTagIndex</code>变成了 <code>SubSegmentCode</code></p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1759909553929.png" alt="1759909553929"></p>
+<ul>
+<li><p><code>SubSegmentCode</code>：用来计算 <code>UserBlock</code> 的地址，是下面 4 个值的异或(所有 <code>UserBlocks</code>里的chunk header在初始化的时候都会经过xor)：</p>
+<ul>
+<li>chunk 对应的 <code>_HEAP</code> 地址的低 4 字节</li>
+<li><code>RtlpLFHKey</code> 的低 4 字节</li>
+<li>chunk 地址右移 4 bit</li>
+<li>chunk 与其所在的 <code>UserBlock</code> 的距离左移 12 bit <code>((chunk address) - (UserBLocks address)) &lt;&lt; 12</code></li>
+</ul>
+</li>
+<li><p><code>PreviousSize</code>：该 chunk 在 <code>UserBlock</code> 中的 index 左移 8 bit</p>
+</li>
+<li><p><code>SegmentOffset</code>：通常为 0 ，没有用。</p>
+</li>
+<li><p><code>UnusedBytes</code>：在空闲 chunk 中为 0x80，在使用的chunk 中为 <code>UnusedBytes &gt;= 0x3F ? 0xBF : (UnusedBytes | 0x80)</code></p>
+</li>
+</ul>
+<h4 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h4><p>在 <code>FrontEndHeapUsageData[x] &amp; 0x1F &gt; 0x10</code>时, 置位 <code>_HEAP-&gt;CompatibilityFlag |= 0x20000000</code>, 下一次allocate(也就是第18次)就会启用LFH并初始化</p>
+<p>分配机制还是有些复杂了，交给AI简化一下</p>
+<p>第 18 次 malloc：</p>
+<ul>
+<li><p><code>_HEAP-&gt;BlocksIndex</code> 是一个管理不同尺寸范围的 <code>_HEAP_LIST_LOOKUP</code> 结构体链表。默认只管理小尺寸 chunk (e.g., <code>&lt; 0x800</code>)。为了支持 LFH，系统会 <strong>扩展此链表</strong> ，追加新的节点以管理更大的尺寸范围（e.g., <code>0x800</code> 到 <code>0x4000</code>）。</p>
+</li>
+<li><p>针对当前被激活的尺寸 <code>x</code>，系统会初始化其对应的 Bucket。具体动作是在 <code>_LFH_HEAP-&gt;SegmentInfoArrays</code> 数组中，填入一个指向 <code>_HEAP_LOCAL_SEGMENT_INFO</code> 结构体的指针。这个结构体是该特定尺寸的“分配管理器”。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"> 0:000&gt; dt _LFH_HEAP 0x2bacb070000</span><br><span class="line">ntdll!_LFH_HEAP</span><br><span class="line">   +0x000 Lock             : _RTL_SRWLOCK</span><br><span class="line">   +0x008 SubSegmentZones  : _LIST_ENTRY [ 0x000002ba`cb105e30 - 0x000002ba`cb105e30 ]</span><br><span class="line">   +0x018 Heap             : 0x000002ba`cb100000 Void</span><br><span class="line">   +0x020 NextSegmentInfoArrayAddress : 0x000002ba`cb071080 Void</span><br><span class="line">   +0x028 FirstUncommittedAddress : 0x000002ba`cb072000 Void</span><br><span class="line">   +0x030 ReservedAddressLimit : 0x000002ba`cb0d2000 Void</span><br><span class="line">   +0x038 SegmentCreate    : 3</span><br><span class="line">   +0x03c SegmentDelete    : 0</span><br><span class="line">   +0x040 MinimumCacheDepth : 0</span><br><span class="line">   +0x044 CacheShiftThreshold : 0</span><br><span class="line">   +0x048 SizeInCache      : 0</span><br><span class="line">   +0x050 RunInfo          : _HEAP_BUCKET_RUN_INFO</span><br><span class="line">   +0x060 UserBlockCache   : [12] _USER_MEMORY_CACHE_ENTRY</span><br><span class="line">   +0x2a0 MemoryPolicies   : _HEAP_LFH_MEM_POLICIES</span><br><span class="line">   +0x2a4 Buckets          : [129] _HEAP_BUCKET</span><br><span class="line">   +0x4a8 SegmentInfoArrays : [129] (null) </span><br><span class="line">   +0x8b0 AffinitizedInfoArrays : [129] (null) </span><br><span class="line">   +0xcb8 SegmentAllocator : (null) </span><br><span class="line">   +0xcc0 LocalData        : [1] _HEAP_LOCAL_DATA</span><br><span class="line">0:000&gt; dx -r1 (*((ntdll!_HEAP_LOCAL_SEGMENT_INFO * (*)[129])0x2bacb0704a8))</span><br><span class="line">(*((ntdll!_HEAP_LOCAL_SEGMENT_INFO * (*)[129])0x2bacb0704a8))                 [Type: _HEAP_LOCAL_SEGMENT_INFO * [129]]</span><br><span class="line">    ....</span><br><span class="line">    [15]             : 0x2bacb070fc0 [Type: _HEAP_LOCAL_SEGMENT_INFO *]   0xF &lt;--0xF0（不包含头部）大小的堆块</span><br><span class="line">    ....</span><br></pre></td></tr></table></figure></li>
+<li><p><code>RtlpActivateLowFragmentationHeap</code>调用 <code>RtlpCreateLowFragHeap</code> 创建一个 <code>_LFH_HEAP</code> 结构，并将其地址存入 <code>_heap-&gt;FrontEndHeap</code>只用NT heap的话这个地方是不存在的</p>
+</li>
+<li><p>调用 <code>RtlpExtend...</code> 系列函数</p>
+</li>
+<li><p><strong>由于前面创建结构会申请一些堆块，所以造成了第 18 次开始 chunk 申请不连续的假象。</strong></p>
+</li>
+</ul>
+<p>第 19 次 malloc开始分配</p>
+<h4 id="分配-Allocation"><a href="#分配-Allocation" class="headerlink" title="分配 (Allocation)"></a>分配 (Allocation)</h4><p><img src="/image/2025-10-7-learning_windows_pwn_2/1759917256615.png" alt="1759917256615"></p>
+<p>分配的核心逻辑在 <code>RtlpLowFragHeapAllocFromContext</code> 函数中，分为<strong>寻找可用 Subsegment</strong> 和<strong>从中获取 chunk</strong> 两步。</p>
+<ol>
+<li><strong>寻找可用的 Subsegment (内存池)</strong><ul>
+<li><p>首先，检查当前尺寸的“首选”内存池 <code>_HEAP_LOCAL_SEGMENT_INFO-&gt;ActiveSubsegment</code> 中是否还有空闲块。通过检查 <code>ActiveSubsegment-&gt;AggregateExchg.Depth</code>（空闲块数量）来判断。 –&gt;reuse attack可以通过这里查看需要堆喷射多少堆块</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dx -r1 ((ntdll!_HEAP_LOCAL_SEGMENT_INFO *)0x2bacb070fc0)</span><br><span class="line">((ntdll!_HEAP_LOCAL_SEGMENT_INFO *)0x2bacb070fc0)                 : 0x2bacb070fc0 [Type: _HEAP_LOCAL_SEGMENT_INFO *]</span><br><span class="line">    [+0x000] LocalData        : 0x2bacb070cc0 [Type: _HEAP_LOCAL_DATA *]</span><br><span class="line">    [+0x008] ActiveSubsegment : 0x2bacb105ed0 [Type: _HEAP_SUBSEGMENT *]</span><br><span class="line">    [+0x010] CachedItems      [Type: _HEAP_SUBSEGMENT * [16]]</span><br><span class="line">    [+0x090] SListHeader      [Type: _SLIST_HEADER]</span><br><span class="line">    [+0x0a0] Counters         [Type: _HEAP_BUCKET_COUNTERS]</span><br><span class="line">    [+0x0a8] LastOpSequence   : 0x3 [Type: unsigned long]</span><br><span class="line">    [+0x0ac] BucketIndex      : 0xf [Type: unsigned short]</span><br><span class="line">    [+0x0ae] LastUsed         : 0x0 [Type: unsigned short]</span><br><span class="line">    [+0x0b0] NoThrashCount    : 0x2 [Type: unsigned short]</span><br><span class="line">0:000&gt; dx -r1 ((ntdll!_HEAP_SUBSEGMENT *)0x2bacb105ed0)</span><br><span class="line">((ntdll!_HEAP_SUBSEGMENT *)0x2bacb105ed0)                 : 0x2bacb105ed0 [Type: _HEAP_SUBSEGMENT *]</span><br><span class="line">    [+0x000] LocalInfo        : 0x2bacb070fc0 [Type: _HEAP_LOCAL_SEGMENT_INFO *]</span><br><span class="line">    [+0x008] UserBlocks       : 0x2bacb10a240 [Type: _HEAP_USERDATA_HEADER *]</span><br><span class="line">    [+0x010] DelayFreeList    [Type: _SLIST_HEADER]</span><br><span class="line">    [+0x020] AggregateExchg   [Type: _INTERLOCK_SEQ]</span><br><span class="line">    [+0x024] BlockSize        : 0x10 [Type: unsigned short]</span><br><span class="line">    [+0x026] Flags            : 0x0 [Type: unsigned short]</span><br><span class="line">    [+0x028] BlockCount       : 0x3f [Type: unsigned short]</span><br><span class="line">    [+0x02a] SizeIndex        : 0xf [Type: unsigned char]</span><br><span class="line">    [+0x02b] AffinityIndex    : 0x0 [Type: unsigned char]</span><br><span class="line">    [+0x024] Alignment        [Type: unsigned long [2]]</span><br><span class="line">    [+0x02c] Lock             : 0x7 [Type: unsigned long]</span><br><span class="line">    [+0x030] SFreeListEntry   [Type: _SINGLE_LIST_ENTRY]</span><br><span class="line">0:000&gt; dx -r1 (*((ntdll!_HEAP_SUBSEGMENT *)0x2bacb105ed0)).AggregateExchg</span><br><span class="line">(*((ntdll!_HEAP_SUBSEGMENT *)0x2bacb105ed0)).AggregateExchg                 [Type: _INTERLOCK_SEQ]</span><br><span class="line">    [+0x000] Depth            : 0x5 [Type: unsigned short]  </span><br><span class="line">    [+0x002 (14: 0)] Hint             : 0x3 [Type: unsigned short]</span><br><span class="line">    [+0x002 (15:15)] Lock             : 0x0 [Type: unsigned short]</span><br><span class="line">    [+0x002] Hint16           : 0x3 [Type: unsigned short]</span><br><span class="line">    [+0x000] Exchg            : 196613 [Type: long]</span><br></pre></td></tr></table></figure></li>
+<li><p>如果 <code>ActiveSubsegment</code> 已满，则去“备用池” <code>CachedItems</code> 列表里寻找其他有空闲块的 <code>Subsegment</code>。如果找到，就将其设置为新的 <code>ActiveSubsegment</code>。</p>
+</li>
+<li><p>如果所有现有 <code>Subsegment</code> 都满了，则会 <strong>分配并初始化一个新的 <code>UserBlocks</code></strong> （即 <code>_HEAP_SUBSEGMENT</code>），并将其设置为 <code>ActiveSubsegment</code>。</p>
+</li>
+</ul>
+</li>
+<li><strong>从 Subsegment 中获取 Chunk</strong><ul>
+<li><strong>获取随机数</strong> : 从一个全局的 256 元素随机数数组 <code>RtlpLowFragHeapRandomData</code> 中循环取值。这个随机数（范围 0x0 ~ 0x7F）用于增加分配地址的不可预测性。</li>
+<li><strong>计算随机起始索引</strong> : 使用公式 <code>index = (random_value * max_index) &gt;&gt; 7</code> 计算出一个在 <code>UserBlocks</code> 内的随机起始搜索点。</li>
+<li><strong>查找空闲块 (位图操作)</strong> : 从计算出的 <code>index</code> 开始，扫描 <code>UserBlocks-&gt;BusyBitmap</code>。</li>
+<li>如果 <code>index</code> 对应的位是 <code>0</code>（空闲），则直接选中。</li>
+<li>如果该位是 <code>1</code>（占用，即发生碰撞&#x2F;collision），则向后线性搜索，直到找到第一个为 <code>0</code> 的位。</li>
+<li><strong>更新元数据</strong> :</li>
+<li>将 <code>BusyBitmap</code> 中找到的位设置为 <code>1</code>。</li>
+<li>更新 <code>ActiveSubsegment-&gt;AggregateExchg.Depth</code> 等统计信息。</li>
+<li>在返回的 chunk 头部进行设置：<ul>
+<li><code>chunk-&gt;PreviousSize</code> 被用来存储这个 chunk 在 <code>UserBlocks</code> 中的索引，便于释放时快速定位。</li>
+<li><code>chunk-&gt;UnusedBytes</code> 的最高位被设置为 <code>1</code>（<code>|= 0x80</code>），标记这是一个由 LFH 分配的、处于“占用”状态的 chunk。</li>
+</ul>
+</li>
+<li><strong>返回地址</strong> : 最后，将 chunk 的用户数据区地址返回给调用者。</li>
+</ul>
+</li>
+</ol>
+<h4 id="释放-Free"><a href="#释放-Free" class="headerlink" title="释放 (Free)"></a>释放 (Free)</h4><ul>
+<li>在 <code>RtlpFreeHeapInternal</code> 函数中首先会检查释放的内存地址是否对齐 0x10 。</li>
+<li>通过 <code>_HEAP_ENTRY-&gt;UnpackedEntry.UnusedBytes &amp; 0x3F</code> 是否为 0 判断 chunk 是否已被释放。</li>
+<li>通过 <code>_HEAP_ENTRY-&gt;UnpackedEntry.SubSegmentCode</code> 找到对应的 <code>UserBlock</code> 进而找到 <code>HeapSubsegment</code> 。</li>
+<li>通过 <code>UserBlock-&gt;EncodedOffsets</code> 再尝试找回 <code>_HEAP_ENTRY</code> 从而校验有无恶意修改。</li>
+<li>将 <code>_HEAP_ENTRY.UnusedBytes</code> 设置为 0x80 。</li>
+<li>将 <code>UserBlocks-&gt;BusyBitmap.Buffer</code> 中释放的 chunk 对应的位复位。</li>
+</ul>
+<h2 id="Segment-Heap"><a href="#Segment-Heap" class="headerlink" title="Segment Heap"></a>Segment Heap</h2><p>segment heap分配规则：</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764555740216.png" alt="1764555740216"></p>
+<p>在常规的应用进程中，Windows使用Nt Heap，而在特定进程，例如lsass.exe,svchost.exe等系统进程中，Windows采用Segment Heap</p>
+<p>Windows在系统进程中使用Segment Heap，部分应用也使用了Segment heap，比如Edge。对于特定的进程开启Segment Heap，需要在注册表里修改：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">reg add <span class="string">&quot;HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\TestSegmentHeap.exe&quot;</span> /v FrontEndHeapDebugOptions /t REG_DWORD /d <span class="number">0</span>x8 /f</span><br></pre></td></tr></table></figure>
+
+<h3 id="VS-堆"><a href="#VS-堆" class="headerlink" title="VS 堆"></a>VS 堆</h3><p><img src="/image/2025-10-7-learning_windows_pwn_2/1764555139767.png" alt="1764555139767"></p>
+<h4 id="相关结构体-2"><a href="#相关结构体-2" class="headerlink" title="相关结构体"></a>相关结构体</h4><h5 id="Segment-Heap-1"><a href="#Segment-Heap-1" class="headerlink" title="_Segment_Heap"></a>_Segment_Heap</h5><p><code>Signature</code>：区分堆类型的签名，对于 Segment Heap 总是 0xDDEEDDEE 。</p>
+<p><code>SegContexts (_HEAP_SEG_CONTEXT)</code>：与 Segment 有关的管理结构体。</p>
+<p><code>VsContext (_HEAP_VS_CONTEXT)</code>：Variable Size Allocation 的核心结构体，跟踪 variable size allocation 分配状态。</p>
+<p><code>LfhContext ( _HEAP_LFH_CONTEXT)</code>：Low Fragmentation Heap 的核心结构体，跟踪 LFH 分配状态。</p>
+<h5 id="HEAP-VS-CONTEXT"><a href="#HEAP-VS-CONTEXT" class="headerlink" title="_HEAP_VS_CONTEXT"></a>_HEAP_VS_CONTEXT</h5><p><code>FreeChunkTree (_RTL_RB_TREE)</code>：以红黑树管理空闲 chunk ，以chunk 大小维护，较大的 chunk 在右，较小的 chunk 在左。</p>
+<p><code>Root</code>：指向红黑树的根节点。</p>
+<ul>
+<li><code>Encoded</code>：根据最低比特是否为 1 决定红黑树的指针是否加密（默认不加密）。加密方法是当前节点的指针异或当前节点的地址，对于 <code>Root</code> 为 <code>EncodedRoot = Root ^ FreeChunkTree</code></li>
+</ul>
+<p><code>SubsegmentList</code>：所有的 VS Subsegment 链表，实际存储的是 <code>SubsegmentList</code> 地址异或指向的 VS Subsegment 的地址。</p>
+<p><code>DelayFreeContext (_HEAP_VS_DELAY_FREE_CONTEXT)</code>：<code>VsContext-&gt;Config</code> 决定是否开启（用户态默认不开启，内核态默认开启），当开启时释放的 chunk 会先放到 <code>DelayFreeContext</code> 这个单向链表中，当链表中的 chunk 达到一定数量的时候才会集中释放。</p>
+<p><code>BackendCtx</code>：指向  <code>_SEGMENT_HEAP.SegContexts</code> 。这个指针异或了 <code>_HEAP_VS_CONTEXT</code> 的地址。</p>
+<p><code>Callbacks</code>：用于管理 VS SubSegments 函数指针集合，函数指针都经过加密 <code>RtlpHpHeapGlobals.HeapKey ^ VsContext_addr ^ func_ptr</code> 。</p>
+<ul>
+<li><code>Allocate</code>：<code>RtlpHpSegVsAllocate</code></li>
+<li><code>Free</code>：<code>RtlpHpSegLfhVsFree</code></li>
+<li><code>Commit</code>：<code>RtlpHpSegLfhVsCommit</code></li>
+<li><code>Decommit</code>：<code>RtlpHpSegLfhVsDecommit</code></li>
+</ul>
+<h5 id="RtlpHpHeapGlobals（-RTLP-HP-HEAP-GLOBALS）"><a href="#RtlpHpHeapGlobals（-RTLP-HP-HEAP-GLOBALS）" class="headerlink" title="RtlpHpHeapGlobals（_RTLP_HP_HEAP_GLOBALS）"></a>RtlpHpHeapGlobals（_RTLP_HP_HEAP_GLOBALS）</h5><p>在 Segment Heap 中，许多数据和指针都被加密了。<code>RtlpHpHeapGlobals</code> 用于存放加密用的一些 key 和其他信息。地址可以在windbg中使用 <code>dx ntdll!RtlpHpHeapGlobals</code>直接查找，该地址在 <code>ntdll.dll</code>中</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dt _RTLP_HP_HEAP_GLOBALS 0x7fffa3936f40</span><br><span class="line">ntdll!_RTLP_HP_HEAP_GLOBALS</span><br><span class="line">   +0x000 HeapKey          : 0x08a75e35`7d23470b</span><br><span class="line">   +0x008 LfhKey           : 0x2107b942`fbbdfd6a</span><br><span class="line">   +0x010 FailureInfo      : 0x00007fff`a39338b0 _HEAP_FAILURE_INFORMATION</span><br><span class="line">   +0x018 CommitLimitData  : _RTL_HEAP_MEMORY_LIMIT_DATA</span><br><span class="line">   +0x038 Flags            : 3</span><br><span class="line">   +0x038 FlagsBits        : &lt;unnamed-tag&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>HeapKey</code>：8 字节随机数，用于 VS Allocator 和 Segment Allocator 中的数据加密。</li>
+<li><code>LfhKey</code>：8 字节随机数，用于 LowFragmentationHeap 中的数据加密。</li>
+</ul>
+<h5 id="Allocated-Freed-Chunk"><a href="#Allocated-Freed-Chunk" class="headerlink" title="Allocated &#x2F; Freed Chunk"></a>Allocated &#x2F; Freed Chunk</h5><p><strong>空闲堆块</strong>： <code>FreeChunkTree</code> 中的chunk，头部占八字节，这 8 字节是用 <strong>XOR</strong> 编码的（_HEAP_VS_CHUNK_FREE_HEADER）</p>
+<p>$$<br>\text{DecodedHeader} &#x3D; \text{EncodedHeader} \oplus \text{Address} \oplus \text{HeapKey}<br>$$</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764567797067.png" alt="1764567797067"></p>
+<p><code>MemoryCost</code>：表示 chunk 被申请的时候会有多少 page 被提交</p>
+<p><code>UnsafeSize</code>：堆块 <code>Size</code> ，右移 4 位</p>
+<p><code>UnsafePrevSize</code>：前一个堆块 <code>Size</code> ，右移 4 位。</p>
+<p><code>Allocated</code>：表示堆块是否空闲，已分配恒为 0x1</p>
+<p><strong>已分配的堆块</strong>：HEAP_VS__SUBSEGMENT 中的chunk，头部占16字节（_HEAP_VS_CHUNK_HEADER）</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764568101375.png" alt="1764568101375"></p>
+<p><code>EncodedSegmentPageOffset</code>：让堆管理器能够从任意一个 VS 堆块（Chunk）快速反向定位到管理这片内存区域的元数据头部（_HEAP_VS_SUBSEGMENT）。加密： <code>EncodedSegmentPageOffset = SegmentPageOffset ^ (int8)chunk address ^ (int8)RtlpHpHeapGlobals.HeapKey</code></p>
+<h4 id="分配"><a href="#分配" class="headerlink" title="分配"></a>分配</h4><ol>
+<li>大小 <code>&lt;= 0x4000 - 16</code>，尝试走 LFH 机制。<ul>
+<li>如果 LFH 桶已激活，直接分配。</li>
+<li>如果未激活，增加热度计数器，达到阈值才激活，然后依照VS分配。</li>
+</ul>
+</li>
+<li>如果大小 <code>&gt; 0x20000</code>，直接走大块分配接口。</li>
+<li>VS分配：通过 <code>((Size + 0xf) &gt;&gt; 4) + 1</code> 计算出 <code>ChunkIndex</code> 。红黑树 <code>VSContext-&gt;FreeChunkTree</code> 中搜索大于 <code>ChunkIndex</code> 的最小的 chunk 。</li>
+<li>找到后调会用 <code>RtlpHpVsChunkSplit</code> 将 chunk 从红黑树中取出并切掉多余的 chunk ，然后将多余的 chunk 插入到 <code>VSContext-&gt;FreeChunkTree</code><ul>
+<li>切割前会验证所属的 <code>VSSubsegment</code>的 <code>(VSSubsegment-&gt;Signature ^ VSSubsegment-&gt;Size ^ 0x2BED) &amp; 0x7FFF == 0</code></li>
+</ul>
+</li>
+<li>如果找不到合适的 chunk 会调用 <code>RtlpHpVsSubsegmentCreate</code> 函数使用 Segment Allocation 分配一个新的 <code>VSSubsegment</code><ul>
+<li>检查 <code>VSContext-&gt;SubsegmentList.Blink.Flink = VSContext-&gt;SubsegmentList</code> ，如果检查通过则将新创建的 <code>VSSubsegment</code> 从 <code>SubsegmentList.Blink</code> 插入到 <code>SubsegmentList</code> 链表中</li>
+<li>将新申请的 <code>VSSubsegment</code> 中的 chunk 插入到 <code>VSContext-&gt;FreeChunkTree</code> 中然后重新在红黑树中搜索合适的 chunk</li>
+</ul>
+</li>
+</ol>
+<h4 id="释放"><a href="#释放" class="headerlink" title="释放"></a>释放</h4><p>对于当前block的校验</p>
+<ol>
+<li>如果 <code>BlockPtr</code> 最低 16 比特（0xFFFF）为 0 则判定为 Large Block 堆分配。（因为Large Block通常是按 64KB 对齐的）</li>
+<li>通过 <code>ChunkHeader.Allocated</code> 判断 chunk 是否已被释放来防止 double free</li>
+<li>解密 <code>ChunkHeader.EncodedSegmentPageOffset</code>，通过 <code>SegmentPageOffset</code> 找到 <code>VSSubsegment</code> 并校验这个 <code>VSSubsegment</code> 的 <code>Signature</code>（VSSubsegment-&gt;Signature ^ VSSubsegment-&gt;Size ^ 0x2BED) &amp; 0x7FFF &#x3D;&#x3D;0）</li>
+<li>调用 <code>RtlpHpVsChunkCoalesce</code> 函数来合并<ol>
+<li>更新 chunk 的 <code>Allocated</code> 为 0</li>
+<li>通过 <code>UnsafePrevSize</code> 判断是否有前一个空闲 chunk，然后判断其allocate位是否为0；同样判断后一个相邻 chunk</li>
+</ol>
+</li>
+<li>如果在 LFH 范围且未开启 LFH （即对应 <code>Buckets</code> 为初始化）则将对应 <code>LfhContext-&gt;Bucket</code> 减 1 （与 Nt Heap 相同）。</li>
+</ol>
+<p>其他检查后续补充</p>
+<h3 id="LFH堆-1"><a href="#LFH堆-1" class="headerlink" title="LFH堆"></a>LFH堆</h3><p>LFH 堆分配的 chunk 没有 chunk header</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764576906996.png" alt="1764576906996"></p>
+<h4 id="相关结构体-3"><a href="#相关结构体-3" class="headerlink" title="相关结构体"></a>相关结构体</h4><h5 id="HEAP-LFH-CONTEXT"><a href="#HEAP-LFH-CONTEXT" class="headerlink" title="_HEAP_LFH_CONTEXT"></a>_HEAP_LFH_CONTEXT</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dx -r1 (*((ntdll!_HEAP_LFH_CONTEXT *)0x17025b50380))</span><br><span class="line">(*((ntdll!_HEAP_LFH_CONTEXT *)0x17025b50380))                 [Type: _HEAP_LFH_CONTEXT]</span><br><span class="line">    [+0x000] BackendCtx       : 0x17025b50140 [Type: void *]</span><br><span class="line">    [+0x008] Callbacks        [Type: _HEAP_SUBALLOCATOR_CALLBACKS]</span><br><span class="line">    [+0x030] AffinityModArray : 0x7fffa38e83db : 0x1 [Type: unsigned char *]</span><br><span class="line">    [+0x038] MaxAffinity      : 0x10 [Type: unsigned char]</span><br><span class="line">    [+0x039] LockType         : 0x0 [Type: unsigned char]</span><br><span class="line">    [+0x03a] MemStatsOffset   : -768 [Type: short]</span><br><span class="line">    [+0x03c] Config           [Type: _RTL_HP_LFH_CONFIG]</span><br><span class="line">    [+0x040] BucketStats      [Type: _HEAP_LFH_SUBSEGMENT_STATS]</span><br><span class="line">    [+0x048] SubsegmentCreationLock : 0x0 [Type: unsigned __int64]</span><br><span class="line">    [+0x080] Buckets          [Type: _HEAP_LFH_BUCKET * [129]]</span><br></pre></td></tr></table></figure>
+
+<p><code>BackendCtx</code>：指向 LFH 堆的后端堆分配器，即 <code>_SEGMENT_HEAP.SegContexts (_HEAP_SEG_CONTEXT)</code>指针未加密</p>
+<p><code>Callbacks</code>：函数指针集合，<code>RtlpHpHeapGlobals.HeapKey ^ LFHContext_addr ^ func_ptr</code></p>
+<ul>
+<li><code>Allocate</code>：<code>RtlpHpSegLfhAllocate</code></li>
+<li><code>Free</code>：<code>RtlpHpSegLfhVsFree</code></li>
+<li><code>Commit</code>：<code>RtlpHpSegLfhVsCommit</code></li>
+<li><code>Decommit</code>：<code>RtlpHpSegLfhVsDecommit</code></li>
+</ul>
+<p><code>Config (_RTL_HP_LFH_CONFIG)</code>：用于表示 LFH 管理堆块的属性。</p>
+<ul>
+<li><code>MaxBlockSize</code>：决定多大的堆块适用于 LFH 分配。</li>
+<li><code>WitholdPageCrossingBlocks</code>：是否有跨页块。</li>
+<li><code>DisableRandomization</code>：是否关闭 LFH 分配随机化。</li>
+</ul>
+<p><code>Buckets (_HEAP_LFH_BUCKET )</code>：<code>Buckets</code> 指针数组，通过最低位区分为 <code>_HEAP_LFH_BUCKET</code> 结构体和单纯的计数作用。</p>
+<ul>
+<li>如果 LFH 启动，每个 <code>Bucket</code> 存储了对应 <code>Size</code> 的 <code>_HEAP_LFH_BUCKET</code> 结构体地址。</li>
+<li>如果 LFH 未启动，每个 <code>Bucket</code> 低 2 字节恒为 0x0001 ，高 2 字节存储了当前 <code>Size</code> 堆块的分配次数，每分配一次加 0x21，每释放一次减 1 。</li>
+</ul>
+<h5 id="HEAP-LFH-BUCKET"><a href="#HEAP-LFH-BUCKET" class="headerlink" title="_HEAP_LFH_BUCKET"></a>_HEAP_LFH_BUCKET</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dt _HEAP_LFH_BUCKET</span><br><span class="line">ntdll!_HEAP_LFH_BUCKET</span><br><span class="line">   +0x000 State            : _HEAP_LFH_SUBSEGMENT_OWNER</span><br><span class="line">   +0x038 TotalBlockCount  : Uint8B</span><br><span class="line">   +0x040 TotalSubsegmentCount : Uint8B</span><br><span class="line">   +0x048 ReciprocalBlockSize : Uint4B</span><br><span class="line">   +0x04c Shift            : UChar</span><br><span class="line">   +0x04d ContentionCount  : UChar</span><br><span class="line">   +0x050 AffinityMappingLock : Uint8B</span><br><span class="line">   +0x058 ProcAffinityMapping : Ptr64 UChar</span><br><span class="line">   +0x060 AffinitySlots    : Ptr64 Ptr64 _HEAP_LFH_AFFINITY_SLOT</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>State (_HEAP_LFH_SUBSEGMENT_OWNER)</code>：用于记录 <code>Buckets</code> 的状态。</p>
+<p><code>AffinitySlots (_HEAP_LFH_AFFINITY_SLOT)</code>： 存储了当前 <code>Bucket</code> 的 subsegment 管理信息。默认只有一个。</p>
+<h5 id="HEAP-LFH-SUBSEGMENT-OWNER"><a href="#HEAP-LFH-SUBSEGMENT-OWNER" class="headerlink" title="_HEAP_LFH_SUBSEGMENT_OWNER"></a>_HEAP_LFH_SUBSEGMENT_OWNER</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dt _HEAP_LFH_SUBSEGMENT_OWNER</span><br><span class="line">ntdll!_HEAP_LFH_SUBSEGMENT_OWNER</span><br><span class="line">   +0x000 IsBucket         : Pos 0, 1 Bit</span><br><span class="line">   +0x000 Spare0           : Pos 1, 7 Bits</span><br><span class="line">   +0x001 BucketIndex      : UChar</span><br><span class="line">   +0x002 SlotCount        : UChar</span><br><span class="line">   +0x002 SlotIndex        : UChar</span><br><span class="line">   +0x003 Spare1           : UChar</span><br><span class="line">   +0x008 AvailableSubsegmentCount : Uint8B</span><br><span class="line">   +0x010 Lock             : Uint8B</span><br><span class="line">   +0x018 AvailableSubsegmentList : _LIST_ENTRY</span><br><span class="line">   +0x028 FullSubsegmentList : _LIST_ENTRY</span><br></pre></td></tr></table></figure>
+
+<p><code>IsBucket</code>：区分是在 <code>Bucket</code> 上还是在 <code>AffinitySlots</code> 上， <code>Bucket</code> 中的 <code>State</code> 为1 。</p>
+<p><code>BucketIndex</code>：当前 <code>Bucket</code> 的编号，通常可以利用这个值查找全局数组 <code>RtlpBucketBlockSizes</code> 来获取 <code>BlockSize</code>：<code>RtlpBucketBlockSizes[State.BucketIndex]</code></p>
+<p><code>AvailableSubsegmentCount</code>：目前可用于分配的的 LFH Subsegments 数量。</p>
+<p><code>AvailableSubsegmentList</code>：指向下一个可用的 LFH subsegment 。</p>
+<p><code>FullSubsegmentList</code>：指向下一个全被使用的 LFH subsegment 。</p>
+<h5 id="HEAP-LFH-SUBSEGMENT"><a href="#HEAP-LFH-SUBSEGMENT" class="headerlink" title="_HEAP_LFH_SUBSEGMENT"></a>_HEAP_LFH_SUBSEGMENT</h5><p>通过 <code>Buckets-&gt;AffinitySlots</code> 管理</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">0:000&gt; dt _HEAP_LFH_SUBSEGMENT</span><br><span class="line">ntdll!_HEAP_LFH_SUBSEGMENT</span><br><span class="line">   +0x000 ListEntry        : _LIST_ENTRY</span><br><span class="line">   +0x010 Owner            : Ptr64 _HEAP_LFH_SUBSEGMENT_OWNER</span><br><span class="line">   +0x010 DelayFree        : _HEAP_LFH_SUBSEGMENT_DELAY_FREE</span><br><span class="line">   +0x018 CommitLock       : Uint8B</span><br><span class="line">   +0x020 FreeCount        : Uint2B</span><br><span class="line">   +0x022 BlockCount       : Uint2B</span><br><span class="line">   +0x020 InterlockedShort : Int2B</span><br><span class="line">   +0x020 InterlockedLong  : Int4B</span><br><span class="line">   +0x024 FreeHint         : Uint2B</span><br><span class="line">   +0x026 Location         : UChar</span><br><span class="line">   +0x027 WitheldBlockCount : UChar</span><br><span class="line">   +0x028 BlockOffsets     : _HEAP_LFH_SUBSEGMENT_ENCODED_OFFSETS</span><br><span class="line">   +0x02c CommitUnitShift  : UChar</span><br><span class="line">   +0x02d CommitUnitCount  : UChar</span><br><span class="line">   +0x02e CommitStateOffset : Uint2B</span><br><span class="line">   +0x030 BlockBitmap      : [1] Uint8B</span><br></pre></td></tr></table></figure>
+
+<p><code>ListEntry</code>：指向前（后）一个 LFH Subsegment</p>
+<p><code>FreeCount</code>：LFH Subsegment 中空闲 <code>Block</code> 的数量。</p>
+<p><code>BlockCount</code>：LFH Subsegment 中 <code>Block</code> 的数量。</p>
+<p><code>FreeHint</code>：释放的 <code>Block</code> 中的最小下标。</p>
+<p><code>Location</code>：标记该 LFH Subsegment 所在的位置。</p>
+<ul>
+<li>0：<code>AvailableSubsegmentList</code></li>
+<li>1：<code>FullSubsegmentList</code></li>
+<li>2：表示 FLH Subsegment 不在链表中</li>
+</ul>
+<p><code>BlockOffsets (_HEAP_LFH_SUBSEGMENT_ENCODED_OFFSETS)</code>：被加密为 <code>EncodedData = RtlpHpHeapGlobals.LfhKey ^ BlockOffsets ^ (Subsegment &gt;&gt; 12)</code> 。</p>
+<p><code>BlockBitmap</code>：每个 LFH 块的状态由该块位图中的 2 个比特表示。</p>
+<ul>
+<li>bit 0：is busy bit</li>
+<li>bit 1：unused bytes</li>
+</ul>
+<p><code>Block</code>：分配器返回给用户的内存。对于已分配的 <code>Block</code> 如果 <code>UnusedBytes</code> 不为 0 会把 <code>Block</code> 在最后 2 字节作为 <code>UnusedBytes</code> ，如果 <code>UnusedBytes</code> 为 1则将最后 2 字节置为 0x8000</p>
+<h4 id="分配-1"><a href="#分配-1" class="headerlink" title="分配"></a>分配</h4><p>aaa</p>
+<h4 id="释放-1"><a href="#释放-1" class="headerlink" title="释放"></a>释放</h4><p>aaa</p>
+<h3 id="后端堆-1"><a href="#后端堆-1" class="headerlink" title="后端堆"></a>后端堆</h3><h4 id="相关数据结构"><a href="#相关数据结构" class="headerlink" title="相关数据结构"></a>相关数据结构</h4><p><img src="/image/2025-10-7-learning_windows_pwn_2/1764636569750.png" alt="1764636569750"></p>
+<h5 id="HEAP-SEG-CONTEXT"><a href="#HEAP-SEG-CONTEXT" class="headerlink" title="_HEAP_SEG_CONTEXT"></a>_HEAP_SEG_CONTEXT</h5><p><code>SegmentMask</code>：用于从 <code>BlockPtr</code> 找到 <code>PageSegment</code> ： <code>PageSegment = BlockPtr &amp; SegmentMask</code> 。</p>
+<p><code>UnitShift</code>：一个 <code>PageDescriptor</code> 维护的内存的大小关于 2 取对数，用于计算 <code>BlockPtr</code> 所在 <code>Page</code> 对应的 <code>PageDescriptor</code> 的下标：<code>Index = BlockPtr &gt;&gt; UnitShift</code> 。</p>
+<p><code>PagePerUnitShift</code>：一个 <code>PageDescriptor</code> 维护的内存的的内存页数（即大小除以 0x1000）关于 2 取对数。</p>
+<p><code>FirstDescriptorIndex</code>：第一个 <code>PageDescriptor</code> 在 <code>SegContext</code> 中的下标。</p>
+<p><code>LfhContext</code>：指向 Segment Heap 的 <code>LfhContext</code> 。</p>
+<p><code>VsContext</code>：指向 Segment Heap 的 <code>VsContext</code> 。</p>
+<p><code>Heap</code>：指向所属的 Segment Heap 。</p>
+<p><code>SegmentListHead</code>：指向 <code>PageSegment</code> 的双向链表。</p>
+<p><code>SegmentCount</code>：<code>PageSegment</code> 的数量。</p>
+<p><code>FreePageRanges</code>：维护空闲的 Subsegment 的红黑树，树的节点为 <code>PageSegment.DescArray</code> 中的元素。与 VS 堆的 <code>FreeChunkTree</code> 相似。</p>
+<p><code>FreeSegmentList</code>：存放空闲的 <code>PageSegment</code> 。</p>
+<h5 id="HEAP-PAGE-SEGMENT"><a href="#HEAP-PAGE-SEGMENT" class="headerlink" title="_HEAP_PAGE_SEGMENT"></a>_HEAP_PAGE_SEGMENT</h5><p><code>ListEntry</code>：连接链表中的前后 <code>PageSegment</code> 。</p>
+<p><code>Signature</code>：用来检验 <code>PageSegment</code> 是否有效，通过 <code>PageSegment ^ SegContext ^ RtlpHpHeapGlobals.HeapKey ^ 0xA2E64EADA2E64EAD</code> 计算。</p>
+<p><code>DescArray (_HEAP_PAGE_RANGE_DESCRIPTOR)</code>：数组中的每个元素对应描述 <code>PageSegment</code> 中一个内存页的状态。</p>
+<h5 id="HEAP-PAGE-RANGE-DESCRIPTOR"><a href="#HEAP-PAGE-RANGE-DESCRIPTOR" class="headerlink" title="_HEAP_PAGE_RANGE_DESCRIPTOR"></a>_HEAP_PAGE_RANGE_DESCRIPTOR</h5><p>页面描述符指示页面段中每个页面的状态（已分配或已释放）和信息（页面是否为块的开始、块的大小等）。它可以被划分为已分配和释放。</p>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764637028567.png" alt="1764637028567"></p>
+<p><code>TreeSignature</code>：<code>PageRangeDescriptor</code> 的签名，值为恒为 0xCCDDCCDD 。只在 <code>Block</code> 的开头对应的 <code>PageRangeDescriptor</code> 才有。<code>UnusedBytes</code>：申请的块未使用的部分的大小。</p>
+<p><code>RangeFlag</code>：表示页的状态。</p>
+<ul>
+<li>Bit 1：allocted bit</li>
+<li>Bit 2：block header bit</li>
+<li>Bit 3：Commited<ul>
+<li>LFH：<code>RangeFlag &amp; 0xc = 8</code></li>
+<li>VS：<code>RangeFlag &amp; 0xc = 0xc</code></li>
+</ul>
+</li>
+<li><code>CommitedPageCount</code>：表示相应页面中提交的页数。</li>
+<li><code>key (_HEAP_DESCRIPTOR_KEY)</code>：存储与 <code>PageRangeDescriptor</code> 对应的页面的一些相关信息。</li>
+</ul>
+<p><img src="/image/2025-10-7-learning_windows_pwn_2/1764637185001.png" alt="1764637185001"></p>
+<p><code>TreeNode (_RTL_BALANCED_NODE)</code>：</p>
+<ul>
+<li><code>Left</code>：指向大小小于当前 <code>PageRangeDescriptor</code> 对应 <code>Block</code> 的 <code>Block</code> 对应的 <code>PageRangeDescriptor</code> 。</li>
+<li><code>Right</code>：指向大小大于当前 <code>PageRangeDescriptor</code> 对应 <code>Block</code> 的 <code>Block</code> 对应的 <code>PageRangeDescriptor</code> 。</li>
+<li><code>ParentValue</code>：指向父节点，指针最低 1 比特表示是否加密。</li>
+</ul>
+<h4 id="分配-2"><a href="#分配-2" class="headerlink" title="分配"></a>分配</h4><h4 id="释放-2"><a href="#释放-2" class="headerlink" title="释放"></a>释放</h4>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#windows"><span class="toc-number">1.</span> <span class="toc-text">windows</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#NT-Heap"><span class="toc-number">1.1.</span> <span class="toc-text">NT Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E5%A0%86"><span class="toc-number">1.1.1.</span> <span class="toc-text">后端堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP"><span class="toc-number">1.1.1.1.1.</span> <span class="toc-text">_HEAP</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-ENTRY"><span class="toc-number">1.1.1.1.2.</span> <span class="toc-text">_HEAP_ENTRY</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LIST-LOOKUP"><span class="toc-number">1.1.1.1.3.</span> <span class="toc-text">_HEAP_LIST_LOOKUP</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D%E6%9C%BA%E5%88%B6-RtlAllocateHeap"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">分配机制(RtlAllocateHeap)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Free-RtlFreeHeap"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">Free (RtlFreeHeap)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFH%E5%A0%86"><span class="toc-number">1.1.2.</span> <span class="toc-text">LFH堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-1"><span class="toc-number">1.1.2.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#FrontEndHeap%EF%BC%88-LFH-HEAP%EF%BC%89"><span class="toc-number">1.1.2.1.1.</span> <span class="toc-text">FrontEndHeap（_LFH_HEAP）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Buckets%EF%BC%88-HEAP-BUCKET%EF%BC%89"><span class="toc-number">1.1.2.1.2.</span> <span class="toc-text">Buckets（_HEAP_BUCKET）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#UserBlocks%EF%BC%88-HEAP-USERDATA-HEADER%EF%BC%89"><span class="toc-number">1.1.2.1.3.</span> <span class="toc-text">UserBlocks（_HEAP_USERDATA_HEADER）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-ENTRY-1"><span class="toc-number">1.1.2.1.4.</span> <span class="toc-text">_HEAP_ENTRY</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.2.2.</span> <span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-Allocation"><span class="toc-number">1.1.2.3.</span> <span class="toc-text">分配 (Allocation)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-Free"><span class="toc-number">1.1.2.4.</span> <span class="toc-text">释放 (Free)</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Segment-Heap"><span class="toc-number">1.2.</span> <span class="toc-text">Segment Heap</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#VS-%E5%A0%86"><span class="toc-number">1.2.1.</span> <span class="toc-text">VS 堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-2"><span class="toc-number">1.2.1.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#Segment-Heap-1"><span class="toc-number">1.2.1.1.1.</span> <span class="toc-text">_Segment_Heap</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-VS-CONTEXT"><span class="toc-number">1.2.1.1.2.</span> <span class="toc-text">_HEAP_VS_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#RtlpHpHeapGlobals%EF%BC%88-RTLP-HP-HEAP-GLOBALS%EF%BC%89"><span class="toc-number">1.2.1.1.3.</span> <span class="toc-text">RtlpHpHeapGlobals（_RTLP_HP_HEAP_GLOBALS）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Allocated-Freed-Chunk"><span class="toc-number">1.2.1.1.4.</span> <span class="toc-text">Allocated &#x2F; Freed Chunk</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D"><span class="toc-number">1.2.1.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE"><span class="toc-number">1.2.1.3.</span> <span class="toc-text">释放</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFH%E5%A0%86-1"><span class="toc-number">1.2.2.</span> <span class="toc-text">LFH堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%BB%93%E6%9E%84%E4%BD%93-3"><span class="toc-number">1.2.2.1.</span> <span class="toc-text">相关结构体</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-CONTEXT"><span class="toc-number">1.2.2.1.1.</span> <span class="toc-text">_HEAP_LFH_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-BUCKET"><span class="toc-number">1.2.2.1.2.</span> <span class="toc-text">_HEAP_LFH_BUCKET</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-SUBSEGMENT-OWNER"><span class="toc-number">1.2.2.1.3.</span> <span class="toc-text">_HEAP_LFH_SUBSEGMENT_OWNER</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-LFH-SUBSEGMENT"><span class="toc-number">1.2.2.1.4.</span> <span class="toc-text">_HEAP_LFH_SUBSEGMENT</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-1"><span class="toc-number">1.2.2.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-1"><span class="toc-number">1.2.2.3.</span> <span class="toc-text">释放</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E5%A0%86-1"><span class="toc-number">1.2.3.</span> <span class="toc-text">后端堆</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.2.3.1.</span> <span class="toc-text">相关数据结构</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-SEG-CONTEXT"><span class="toc-number">1.2.3.1.1.</span> <span class="toc-text">_HEAP_SEG_CONTEXT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-PAGE-SEGMENT"><span class="toc-number">1.2.3.1.2.</span> <span class="toc-text">_HEAP_PAGE_SEGMENT</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#HEAP-PAGE-RANGE-DESCRIPTOR"><span class="toc-number">1.2.3.1.3.</span> <span class="toc-text">_HEAP_PAGE_RANGE_DESCRIPTOR</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%85%8D-2"><span class="toc-number">1.2.3.2.</span> <span class="toc-text">分配</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%87%8A%E6%94%BE-2"><span class="toc-number">1.2.3.3.</span> <span class="toc-text">释放</span></a></li></ol></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&text=windows 学习（二）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&is_video=false&description=windows 学习（二）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（二）&body=Check out this article: https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&title=windows 学习（二）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&name=windows 学习（二）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/07/2025-10-7-learning_windows_pwn_2/&t=windows 学习（二）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
