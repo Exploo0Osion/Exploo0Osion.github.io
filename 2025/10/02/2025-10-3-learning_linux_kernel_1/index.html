@@ -9,7 +9,7 @@
     <meta name="description" content="linux kernel一、kernel pwn学习（一）1、常用指令和脚本解压命令123456789mkdir core #创建core文件夹，在其中解压缩和打包file core.cpio #查看压缩方式mv core.cpio .&#x2F;core&#x2F;core.cpio.gz # gunzip只能解压gz后缀的文件cd coregunzip core.cpio.gz # gzip解压cpio -i">
 <meta property="og:type" content="article">
 <meta property="og:title" content="linux kernel学习（一）">
-<meta property="og:url" content="https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/index.html">
+<meta property="og:url" content="https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/index.html">
 <meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
 <meta property="og:description" content="linux kernel一、kernel pwn学习（一）1、常用指令和脚本解压命令123456789mkdir core #创建core文件夹，在其中解压缩和打包file core.cpio #查看压缩方式mv core.cpio .&#x2F;core&#x2F;core.cpio.gz # gunzip只能解压gz后缀的文件cd coregunzip core.cpio.gz # gzip解压cpio -i">
 <meta property="og:locale" content="en_US">
@@ -18,8 +18,8 @@
 <meta property="og:image" content="https://exploo0osion.github.io/image/learning_linux_kernel_1/1740317897176.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/learning_linux_kernel_1/1740317914274.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/learning_linux_kernel_1/1740317331256.png">
-<meta property="article:published_time" content="2025-10-02T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-07T08:04:49.424Z">
+<meta property="article:published_time" content="2025-10-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-07T09:56:39.989Z">
 <meta property="article:author" content="Exploooosion">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://exploo0osion.github.io/image/learning_linux_kernel_1/1740298529614.png">
@@ -101,10 +101,10 @@
     <span id="actions">
       <ul>
         
-        <li><a class="icon" aria-label="Previous post" href="/2025/10/04/2025-10-4-learning_windows_pwn_1/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Previous post" href="/2025/10/03/2025-10-3-learning_linux_kernel_2/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
         
         
-        <li><a class="icon" aria-label="Next post" href="/2025/10/03/2025-10-3-learning_linux_kernel_2/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Next post" href="/2025/05/08/2025-05-8-CVE-2025-5145/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
         
         <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
         <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
@@ -117,17 +117,17 @@
     <br/>
     <div id="share" style="display: none">
       <ul>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&text=linux kernel学习（一）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&is_video=false&description=linux kernel学习（一）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=linux kernel学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&name=linux kernel学习（一）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&t=linux kernel学习（一）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&text=linux kernel学习（一）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&is_video=false&description=linux kernel学习（一）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=linux kernel学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&name=linux kernel学习（一）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&t=linux kernel学习（一）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
@@ -159,7 +159,7 @@
       
     <div class="postdate">
       
-        <time datetime="2025-10-02T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-10-03</time>
+        <time datetime="2025-10-01T16:00:00.000Z" class="dt-published" itemprop="datePublished">2025-10-02</time>
         
       
     </div>
@@ -287,17 +287,17 @@
 
     <div id="share-footer" style="display: none">
       <ul>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&text=linux kernel学习（一）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&is_video=false&description=linux kernel学习（一）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=linux kernel学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&name=linux kernel学习（一）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/03/2025-10-3-learning_linux_kernel_1/&t=linux kernel学习（一）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&text=linux kernel学习（一）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&is_video=false&description=linux kernel学习（一）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=linux kernel学习（一）&body=Check out this article: https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&title=linux kernel学习（一）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&name=linux kernel学习（一）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/10/02/2025-10-3-learning_linux_kernel_1/&t=linux kernel学习（一）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
