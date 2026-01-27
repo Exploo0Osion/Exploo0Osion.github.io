@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
     <meta name="description" content="Windows DLL 注入和Api HookDLL 注入DLL 注入（DLL Injection）是指将一个外部的动态链接库（DLL）强制加载到目标进程的虚拟地址空间中，并使其代码在目标进程的上下文中执行的技术。 核心原理：Windows 操作系统对进程实施了虚拟内存隔离机制，进程 A 无法直接访问进程 B 的内存。DLL 注入的本质是打破这种隔离，通过操作系统提供的调试 API 或机制，在">
 <meta property="og:type" content="article">
-<meta property="og:title" content="windows dll注入和api hook">
+<meta property="og:title" content="windows dll注入与R3 hook">
 <meta property="og:url" content="https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/index.html">
 <meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
 <meta property="og:description" content="Windows DLL 注入和Api HookDLL 注入DLL 注入（DLL Injection）是指将一个外部的动态链接库（DLL）强制加载到目标进程的虚拟地址空间中，并使其代码在目标进程的上下文中执行的技术。 核心原理：Windows 操作系统对进程实施了虚拟内存隔离机制，进程 A 无法直接访问进程 B 的内存。DLL 注入的本质是打破这种隔离，通过操作系统提供的调试 API 或机制，在">
@@ -29,7 +29,7 @@
 <meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-12-windows_dll_injection/1765856499390.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-12-windows_dll_injection/1765856651291.png">
 <meta property="article:published_time" content="2025-12-11T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-07T08:05:23.736Z">
+<meta property="article:modified_time" content="2026-01-23T10:33:10.912Z">
 <meta property="article:author" content="Exploooosion">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-12-12-windows_dll_injection/1765524982009.png">
@@ -52,7 +52,7 @@
       
     
     <!-- title -->
-    <title>windows dll注入和api hook</title>
+    <title>windows dll注入与R3 hook</title>
     <!-- async scripts -->
     <!-- Google Analytics -->
 
@@ -128,16 +128,16 @@
     <div id="share" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&text=windows dll注入和api hook"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&is_video=false&description=windows dll注入和api hook"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=windows dll注入和api hook&body=Check out this article: https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&name=windows dll注入和api hook&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&t=windows dll注入和api hook"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&text=windows dll注入与R3 hook"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&is_video=false&description=windows dll注入与R3 hook"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows dll注入与R3 hook&body=Check out this article: https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&name=windows dll注入与R3 hook&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&t=windows dll注入与R3 hook"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
 </ul>
 
     </div>
@@ -157,7 +157,7 @@
   <header>
     
     <h1 class="posttitle p-name" itemprop="name headline">
-        windows dll注入和api hook
+        windows dll注入与R3 hook
     </h1>
 
 
@@ -423,16 +423,16 @@
     <div id="share-footer" style="display: none">
       <ul>
   <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&text=windows dll注入和api hook"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&is_video=false&description=windows dll注入和api hook"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" href="mailto:?subject=windows dll注入和api hook&body=Check out this article: https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入和api hook"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&name=windows dll注入和api hook&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
-  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&t=windows dll注入和api hook"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&text=windows dll注入与R3 hook"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&is_video=false&description=windows dll注入与R3 hook"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows dll注入与R3 hook&body=Check out this article: https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&title=windows dll注入与R3 hook"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&name=windows dll注入与R3 hook&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2025/12/12/2025-12-12-windows_dll_injection/&t=windows dll注入与R3 hook"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
 </ul>
 
     </div>

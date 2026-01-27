@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759645034590.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759651314902.png">
 <meta property="article:published_time" content="2025-10-03T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-01-07T08:05:06.163Z">
+<meta property="article:modified_time" content="2026-01-23T10:31:51.801Z">
 <meta property="article:author" content="Exploooosion">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://exploo0osion.github.io/image/2025-10-4-learning_windows_pwn_1/1759563374342.png">
@@ -534,7 +534,7 @@
 </ul>
 </li>
 </ul>
-<h4 id="VirtualAlloc-VirtualFree"><a href="#VirtualAlloc-VirtualFree" class="headerlink" title="VirtualAlloc &#x2F; VirtualFree"></a><strong>VirtualAlloc &#x2F; VirtualFree</strong></h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI LPVOID WINAPI <span class="title function_">VirtualAlloc</span> <span class="params">(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="VirtualAlloc-VirtualFree"><a href="#VirtualAlloc-VirtualFree" class="headerlink" title="VirtualAlloc &#x2F; VirtualFree"></a>VirtualAlloc &#x2F; VirtualFree</h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WINBASEAPI LPVOID WINAPI <span class="title function_">VirtualAlloc</span> <span class="params">(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)</span>;</span><br></pre></td></tr></table></figure>
 
 <ul>
 <li><p>作用：为进程保留或提交指定大小的虚拟内存区域。</p>
@@ -564,7 +564,7 @@
 <li><p><strong>关键区别</strong> ：<code>VirtualAlloc</code> 操作的是页（Page，通常是4KB）的整数倍，而 <code>HeapAlloc</code> 可以分配任意字节大小的内存块。</p>
 </li>
 </ul>
-<h4 id="malloc-free"><a href="#malloc-free" class="headerlink" title="malloc &#x2F; free"></a><strong>malloc &#x2F; free</strong></h4><ul>
+<h4 id="malloc-free"><a href="#malloc-free" class="headerlink" title="malloc &#x2F; free"></a>malloc &#x2F; free</h4><ul>
 <li>这是C语言标准库的函数。</li>
 <li><strong>底层实现</strong> : 在Windows上，<code>malloc</code> 和 <code>free</code> 是由C&#x2F;C++运行时库实现的。它们最终会调用Windows的堆API（如 <code>HeapAlloc</code>&#x2F;<code>HeapFree</code>）来向操作系统申请和释放内存。它们管理的是CRT自己的 <strong>私有堆</strong> 。</li>
 <li><strong>不能混用内存分配函数系列：</strong> 例如，由 <code>malloc</code> 分配的内存必须由 <code>free</code> 释放；由 <code>HeapAlloc</code> 分配的内存必须由 <code>HeapFree</code> 释放；由 <code>new</code> 分配的内存必须由 <code>delete</code> 释放。混用会导致堆损坏，引发程序崩溃或难以调试的错误。</li>
