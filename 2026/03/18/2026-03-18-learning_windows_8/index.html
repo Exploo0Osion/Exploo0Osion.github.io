@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="VT And EPTVMX 根模式可以访问VMX指令，并能运行基于硬件的虚拟机。 VMX 非根模式无法访问VMX指令  Virtual Machine Monitor (VMM)是一种创建并运行虚拟机的计算机软件、固件或硬件。运行一个或多个虚拟机的虚拟机称为主机（host），每个虚拟机称为访客机（guest）。  多进程内核创建多个进程 ，并安排它们的内存和执行，使它们之间无法相互干扰。 虚拟">
+<meta property="og:type" content="article">
+<meta property="og:title" content="windows 学习（八）--VT And EPT">
+<meta property="og:url" content="https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="VT And EPTVMX 根模式可以访问VMX指令，并能运行基于硬件的虚拟机。 VMX 非根模式无法访问VMX指令  Virtual Machine Monitor (VMM)是一种创建并运行虚拟机的计算机软件、固件或硬件。运行一个或多个虚拟机的虚拟机称为主机（host），每个虚拟机称为访客机（guest）。  多进程内核创建多个进程 ，并安排它们的内存和执行，使它们之间无法相互干扰。 虚拟">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773895561687.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773896061036.png">
+<meta property="og:image" content="https://file+.vscode-resource.vscode-cdn.net/c%3A/1/Desktop/%E7%AC%94%E8%AE%B0/MyBlog/my-blog/source/_posts/image/2026-03-18-learning_windows_8/1773836256538.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773896266040.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2025-12-30-learning_windows_4/1773895283844.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773901348632.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773904259709.png">
+<meta property="article:published_time" content="2026-03-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-30T07:33:06.127Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2026-03-18-learning_windows_8/1773895561687.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>windows 学习（八）--VT And EPT</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2026/03/26/2026-03-26-r77rootkit/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2026/02/12/2026-02-12-malware_analysis_2/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&text=windows 学习（八）--VT And EPT"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&is_video=false&description=windows 学习（八）--VT And EPT"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（八）--VT And EPT&body=Check out this article: https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&name=windows 学习（八）--VT And EPT&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&t=windows 学习（八）--VT And EPT"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#VT-And-EPT"><span class="toc-number">1.</span> <span class="toc-text">VT And EPT</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8B%E7%9A%84%E8%AE%BF%E5%AD%98"><span class="toc-number">1.1.</span> <span class="toc-text">虚拟化下的访存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BD%B1%E5%AD%90%E9%A1%B5%E8%A1%A8%EF%BC%88SPT%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">影子页表（SPT）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8B%93%E5%B1%95%E9%A1%B5%E8%A1%A8%EF%BC%88EPT%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">拓展页表（EPT）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#EPT-Hook"><span class="toc-number">1.4.</span> <span class="toc-text">EPT Hook</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        windows 学习（八）--VT And EPT
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2026-03-17T16:00:00.000Z" class="dt-published" itemprop="datePublished">2026-03-18</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/malware/">malware</a> › <a class="category-link" href="/categories/malware/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="VT-And-EPT"><a href="#VT-And-EPT" class="headerlink" title="VT And EPT"></a>VT And EPT</h1><p>VMX 根模式可以访问VMX指令，并能运行基于硬件的虚拟机。</p>
+<p>VMX 非根模式无法访问VMX指令</p>
+<p><img src="/image/2026-03-18-learning_windows_8/1773895561687.png" alt="1773895561687"></p>
+<p>Virtual Machine Monitor (VMM)是一种创建并运行虚拟机的计算机软件、固件或硬件。运行一个或多个虚拟机的虚拟机称为主机（host），每个虚拟机称为访客机（guest）。</p>
+<ul>
+<li>多进程内核创建多个进程 ，并安排它们的内存和执行，使它们之间无法相互干扰。</li>
+<li>虚拟机监视器（VMM）创建多个虚拟机来运行软件，并安排它们的内存和执行，使它们之间无法相互干扰</li>
+</ul>
+<p><img src="/image/2026-03-18-learning_windows_8/1773896061036.png" alt="1773896061036"></p>
+<p>VM-Entry ：VMM 执行 VMLAUNCH&#x2F;VMRESUME 指令，CPU 从根模式切换到非根模式，加载 Guest 状态，开始运行 Guest OS；</p>
+<p>VM-Exit ：Guest 中触发了预设的敏感事件（比如 EPT 权限违例、CPUID 指令、MSR 访问等，诸如 CPUID, MOV from&#x2F;to CR3），CPU 自动：</p>
+<ul>
+<li>把 Guest 的完整上下文保存到 VMCS；</li>
+<li>加载 Host 状态，切换到根模式，跳转到 VMM 的 VM-Exit 处理函数；</li>
+<li>把退出原因、违例信息填充到 VMCS 对应字段；<br>VMM 处理完事件后，再次执行 VM-Entry，回到 Guest 继续运行。</li>
+</ul>
+<p>软件通过执行VMXON指令进入VMX操作。</p>
+<p><img src="https://file+.vscode-resource.vscode-cdn.net/c%3A/1/Desktop/%E7%AC%94%E8%AE%B0/MyBlog/my-blog/source/_posts/image/2026-03-18-learning_windows_8/1773836256538.png" alt="1773836256538"></p>
+<p>VMCS，在guest下，每个 vCPU 对应一个 VMCS（Virtual-Machine Control Structure，虚拟机控制结构），这里面保存了很多信息，可以用于触发事件进入到VMM。</p>
+<p><img src="/image/2026-03-18-learning_windows_8/1773896266040.png" alt="1773896266040"></p>
+<h3 id="虚拟化下的访存"><a href="#虚拟化下的访存" class="headerlink" title="虚拟化下的访存"></a>虚拟化下的访存</h3><p>HPA (Host Physical Address), HVA (Host Virtual Address)</p>
+<p>GPA (Guest Physical Address), GVA (Guest Virtual Address)</p>
+<p>SPT (Shadow Page table), EPT (Extended Page Table)</p>
+<p>虚拟机中的进程访存，要实现GVA -&gt; GPA -&gt; HVA -&gt; HPA的转化。即要经历以下步骤：</p>
+<ol>
+<li>客户端虚拟地址经过guest中的页表转化为客户端的物理地址；</li>
+<li>客户端的物理地址经过转换，变为宿主端的虛拟地址。VMM通常会用内部数据结构来记录这个映射。</li>
+<li>宿主端的虛拟地址再经过host上的页表的转换变为真实可用的物理地址。</li>
+</ol>
+<p>在Guest中所有页表相关的内存区域会被VMM设置为不可读不可写，那么 Guest每次访问页表时都会触发vmexit，VMM把转换GPA成HVA，再通过访问VMM对应的页表得到HPA，最后通过HPA指向的内存数据，得到下一级页表的guest物理地址。</p>
+<p>在系统vmexit, vmentry的过程中，硬件会根据内存中VMCS结构中保存的host&#x2F;guest CR3值更新CR3寄存器的值。</p>
+<p><img src="/image/2025-12-30-learning_windows_4/1773895283844.png" alt="1773895283844"></p>
+<p>上述过程费时还费性能，目前有如下解决方式：</p>
+<h2 id="影子页表（SPT）"><a href="#影子页表（SPT）" class="headerlink" title="影子页表（SPT）"></a>影子页表（SPT）</h2><p>实现GVA-&gt;HPA映射</p>
+<p>当guest操作系统在把当前进程的页表基址载入CR3时，VMM会截获这条指令，并将影子页表基地址写入VMCS对应的GUEST_CR3字段。再次进入guest时，硬件会把影子页表的基地址载入CR3。此时，guest页表维护的是影子页表，CR3的值指向影子页表的基地址。</p>
+<p>Guest在访问虚拟地址时（GVA），由于CR3指向影子页表，影子页表中维护了GVA-&gt;HPA映射，MMU就可以直接读取GVA对应的HPA值，不需要VMM参与。</p>
+<p><img src="/image/2026-03-18-learning_windows_8/1773901348632.png" alt="1773901348632"></p>
+<h2 id="拓展页表（EPT）"><a href="#拓展页表（EPT）" class="headerlink" title="拓展页表（EPT）"></a>拓展页表（EPT）</h2><p>影子页表的内存开销也很大，需要为每个Guest进程对应的页表都维护一个影子页表。</p>
+<p>在硬件上支持GVA-&gt;GPA-&gt;HPA的两次地址转换，都由CPU硬件自动完成。</p>
+<p>Guest CR3 指向的L4页表(GPA)，CPU需通过EPT页表来实现Guest CR3 GPA-&gt;HPA的转换。首先会查看硬件的EPT TLB，如果没有对应的转换，则会进一步查找EPT页表；如果还没有，CPU则拋出EPT Violation异常由VMM来处理 。</p>
+<p>获得L4 页表地址后(HPA)，CPU根据GVA对应的L4页表项的内容，获取L3 页表项的GPA。如果L4页表项显示为“缺页”（Page Fault）， 直接交由Guest kernel处理（这里不会有VM-EXIT）。利用EPT访存不需要切换CR3，也不需要GPA-&gt;HVA的转化过程。</p>
+<p><img src="/image/2026-03-18-learning_windows_8/1773904259709.png" alt="1773904259709"></p>
+<h2 id="EPT-Hook"><a href="#EPT-Hook" class="headerlink" title="EPT Hook"></a>EPT Hook</h2>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#VT-And-EPT"><span class="toc-number">1.</span> <span class="toc-text">VT And EPT</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%99%9A%E6%8B%9F%E5%8C%96%E4%B8%8B%E7%9A%84%E8%AE%BF%E5%AD%98"><span class="toc-number">1.1.</span> <span class="toc-text">虚拟化下的访存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BD%B1%E5%AD%90%E9%A1%B5%E8%A1%A8%EF%BC%88SPT%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">影子页表（SPT）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8B%93%E5%B1%95%E9%A1%B5%E8%A1%A8%EF%BC%88EPT%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">拓展页表（EPT）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#EPT-Hook"><span class="toc-number">1.4.</span> <span class="toc-text">EPT Hook</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&text=windows 学习（八）--VT And EPT"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&is_video=false&description=windows 学习（八）--VT And EPT"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=windows 学习（八）--VT And EPT&body=Check out this article: https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&title=windows 学习（八）--VT And EPT"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&name=windows 学习（八）--VT And EPT&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/03/18/2026-03-18-learning_windows_8/&t=windows 学习（八）--VT And EPT"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
