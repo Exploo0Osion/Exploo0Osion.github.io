@@ -17,12 +17,12 @@
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774501191989.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774507042518.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774510120945.png">
-<meta property="og:image" content="https://file+.vscode-resource.vscode-cdn.net/c%3A/1/Desktop/%E7%AC%94%E8%AE%B0/MyBlog/my-blog/source/_posts/image/2026-03-26-r77rootkit/1774510713820.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774510713820.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774510867219.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774511200959.png">
 <meta property="og:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774512986490.png">
 <meta property="article:published_time" content="2026-03-25T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-30T03:04:23.923Z">
+<meta property="article:modified_time" content="2026-03-30T09:01:58.744Z">
 <meta property="article:author" content="Exploooosion">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://exploo0osion.github.io/image/2026-03-26-r77rootkit/1774500130542.png">
@@ -220,7 +220,7 @@
 <p><img src="/image/2026-03-26-r77rootkit/1774510120945.png" alt="1774510120945"></p>
 <p>打开 <code>HKLM\SOFTWARE</code>，读取 <code>$77dll32</code>、<code>$77dll64</code>。</p>
 <p>创建 <code>HKLM\SOFTWARE\$77config</code>，并把 DACL 放宽到普通用户也可写。</p>
-<p><img src="https://file+.vscode-resource.vscode-cdn.net/c%3A/1/Desktop/%E7%AC%94%E8%AE%B0/MyBlog/my-blog/source/_posts/image/2026-03-26-r77rootkit/1774510713820.png" alt="1774510713820"></p>
+<p><img src="/image/2026-03-26-r77rootkit/1774510713820.png" alt="1774510713820"></p>
 <p>启动三个线程：</p>
 <ul>
 <li><p>子进程监听线程：监听 <code>\\.\pipe\$77childproc</code>，管道中读取的内容是子进程的PID，然后会向其注入 <code>$77dll32</code>或 <code>$77dll64</code>，在后续模块里会去hook NtResumeThread这个位于r3层底层的进程创建函数，修改后的逻辑里面会创建对应管道，并写入被创建的子进程PID</p>
