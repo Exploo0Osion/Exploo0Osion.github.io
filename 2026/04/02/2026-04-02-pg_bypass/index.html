@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="从kurasagi项目源码看PG bypassPatchGuard检查内容：IDT、GDT、MSR、SSDT、内核栈、全局变量、部分关键代码，以及 PG 自己的执行面。 初始化KeInitAmd64SpecificState当 InitSafeBootMode &#x3D;&#x3D; 0 时，直接计算一个由 KdPitchDebugger | KdDebuggerNotPresent 派生的除法表达式。 当 I">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从kurasagi项目源码看PG bypass">
+<meta property="og:url" content="https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="从kurasagi项目源码看PG bypassPatchGuard检查内容：IDT、GDT、MSR、SSDT、内核栈、全局变量、部分关键代码，以及 PG 自己的执行面。 初始化KeInitAmd64SpecificState当 InitSafeBootMode &#x3D;&#x3D; 0 时，直接计算一个由 KdPitchDebugger | KdDebuggerNotPresent 派生的除法表达式。 当 I">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-04-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-03T09:30:44.099Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>从kurasagi项目源码看PG bypass</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/2026/04/02/2026-04-02-edrsandblast/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2026/03/31/jobdescription/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&text=从kurasagi项目源码看PG bypass"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&is_video=false&description=从kurasagi项目源码看PG bypass"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=从kurasagi项目源码看PG bypass&body=Check out this article: https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&name=从kurasagi项目源码看PG bypass&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&t=从kurasagi项目源码看PG bypass"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8Ekurasagi%E9%A1%B9%E7%9B%AE%E6%BA%90%E7%A0%81%E7%9C%8BPG-bypass"><span class="toc-number">1.</span> <span class="toc-text">从kurasagi项目源码看PG bypass</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PatchGuard"><span class="toc-number">1.1.</span> <span class="toc-text">PatchGuard</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.1.</span> <span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PatchGuard-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.2.</span> <span class="toc-text">PatchGuard 上下文结构</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kurasagi%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">kurasagi实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Timer-kill"><span class="toc-number">1.2.1.</span> <span class="toc-text">Timer kill</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Kill-Software-Interrupt"><span class="toc-number">1.2.2.</span> <span class="toc-text">Kill Software Interrupt</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A0%B4%E5%9D%8F%E8%BE%85%E5%8A%A9%E4%BE%8B%E7%A8%8B"><span class="toc-number">1.2.3.</span> <span class="toc-text">破坏辅助例程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Barricade"><span class="toc-number">1.2.4.</span> <span class="toc-text">Barricade</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">1.2.5.</span> <span class="toc-text">参考文章</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        从kurasagi项目源码看PG bypass
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2026-04-01T16:00:00.000Z" class="dt-published" itemprop="datePublished">2026-04-02</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="从kurasagi项目源码看PG-bypass"><a href="#从kurasagi项目源码看PG-bypass" class="headerlink" title="从kurasagi项目源码看PG bypass"></a>从kurasagi项目源码看PG bypass</h1><h2 id="PatchGuard"><a href="#PatchGuard" class="headerlink" title="PatchGuard"></a>PatchGuard</h2><p>检查内容：IDT、GDT、MSR、SSDT、内核栈、全局变量、部分关键代码，以及 PG 自己的执行面。</p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><h4 id="KeInitAmd64SpecificState"><a href="#KeInitAmd64SpecificState" class="headerlink" title="KeInitAmd64SpecificState"></a>KeInitAmd64SpecificState</h4><p>当 <code>InitSafeBootMode == 0</code> 时，直接计算一个由 <code>KdPitchDebugger | KdDebuggerNotPresent</code> 派生的除法表达式。</p>
+<p>当 <code>InitSafeBootMode != 0</code> 时，还要额外看 <code>KiSwInterruptPresent()</code>：</p>
+<ul>
+<li>如果 <code>KiSwInterruptPresent() &gt;= 0</code>，仍然走那段除法表达式。</li>
+<li>如果 <code>&lt; 0</code>，则直接返回错误状态，不再继续。</li>
+</ul>
+<p>当除法错误时，会触发异常，异常最终仍然会落到 <code>KiDivideErrorFault -&gt; KiExceptionDispatch</code>，再把控制流送往 <code>KiFilterFiberContext</code>。</p>
+<h4 id="ExpLicenseWatchInitWorker"><a href="#ExpLicenseWatchInitWorker" class="headerlink" title="ExpLicenseWatchInitWorker"></a>ExpLicenseWatchInitWorker</h4><p>根据下方字段的值“非 SafeBoot、无调试器、4% 概率”来判断是否进入 <code>KiFilterFiberContext</code></p>
+<ul>
+<li><code>KUSER_SHARED_DATA.KdDebuggerEnabled &gt;&gt; 1</code></li>
+<li><code>InitSafeBootMode</code></li>
+<li><code>KiSwInterruptPresent()</code></li>
+<li><code>(__rdtsc() &gt;&gt; 3) % 100 &lt;= 3</code> 其概率约为4%</li>
+</ul>
+<h3 id="PatchGuard-上下文结构"><a href="#PatchGuard-上下文结构" class="headerlink" title="PatchGuard 上下文结构"></a>PatchGuard 上下文结构</h3><p>PatchGuard 将 <code>CmpAppendDllSection</code> 的代码复制到其结构中，并用它通过与随机密钥的异或解密其余部分</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">*(_OWORD *)ctx = *(_OWORD *)CmpAppendDllSection;</span><br><span class="line">qmemcpy(ctx + <span class="number">16</span>, <span class="string">&quot;H1Q H1Q(H1Q0H1Q8H1Q@H1QHH1QPH1QXH1Q`H1QhH1QpH1Qx&quot;</span>, <span class="number">48</span>);</span><br><span class="line">...</span><br><span class="line">*((DWORD *)ctx + <span class="number">48</span>) = *((DWORD *)CmpAppendDllSection + <span class="number">48</span>);</span><br></pre></td></tr></table></figure>
+
+<p>在 PatchGuard DPC 执行过程中，引用了如 <code>KiWaitAlways</code> 和 <code>KiWaitNever</code> 等全局变量，用于编码或解码指针。</p>
+<p>随后紧接着填入大量函数指针，许多 <code>ntoskrnl.exe</code> 的指针也被复制到 PatchGuard 上下文中，使 PatchGuard 能够调用函数而无需依赖内核导出表，后面还建立一系列待校验描述符数组。</p>
+<h2 id="kurasagi实现"><a href="#kurasagi实现" class="headerlink" title="kurasagi实现"></a>kurasagi实现</h2><p>kurasagi源码入口很直接：</p>
+<ul>
+<li><code>DriverEntry</code> 初始化运行时变量后，调用 <code>BypassPatchGuard()</code>。</li>
+<li><code>BypassPatchGuard()</code> 依次执行：<ul>
+<li><code>Timer::DisableAllTimers()</code></li>
+<li><code>Context7::DestroyContext7()</code></li>
+<li><code>Misc::DisableMiscRoutines()</code></li>
+<li><code>Barricade::SetupBarricade()</code></li>
+</ul>
+</li>
+</ul>
+<p>也就是说，项目作者自己就把 PG 拆成了这四个对抗面。</p>
+<h3 id="Timer-kill"><a href="#Timer-kill" class="headerlink" title="Timer kill"></a>Timer kill</h3><p>主逻辑位于 <code>kurasagi/Module/Timer.cpp</code>。</p>
+<p><code>IsPatchGuardTimer()</code> 通过两个特征识别目标定时器：</p>
+<ol>
+<li><code>DeferredContext</code> 不是 canonical address。</li>
+<li><code>DeferredRoutine</code> 指向 <code>CcBcbProfiler</code> &#x2F; <code>CcBcbProfiler2</code>。它使用例程 CcBcbProfiler 设置 DPC</li>
+</ol>
+<p><code>DisablePatchGuardTimers()</code> 调用 <code>KeGenericCallDpc</code>，该例程会导致指定例程同时在所有处理器上运行执行 <code>DisablePatchGuardTimersIdPc()</code></p>
+<p>该函数清理每个 CPU 的定时器表 <code>KPRCB.TimerTable.TimerEntries[512]</code>，识别到PatchGuard计时器后把 <code>currentTimer-&gt;Dpc</code> 改写为“加密后的 NULL”，此外它还会额外清空：</p>
+<ul>
+<li><code>KPRCB-&gt;HalReserved[7]</code> 用于存储PatchGuard timer DPC</li>
+<li><code>KPRCB-&gt;AcpiReserved</code></li>
+</ul>
+<h3 id="Kill-Software-Interrupt"><a href="#Kill-Software-Interrupt" class="headerlink" title="Kill Software Interrupt"></a>Kill Software Interrupt</h3><p>主逻辑位于 <code>kurasagi/Module/Context7.cpp</code>。</p>
+<p><code>DestroyContext7()</code> 有两个动作：</p>
+<ol>
+<li>将 <code>KiSwInterruptDispatch</code> 开头改成直接ret</li>
+<li>将 <code>MaxDataSize</code> 指向的位置清零</li>
+</ol>
+<p> <code>KiSwInterruptDispatch</code>由函数 <code>KiSwInterrupt</code>调用，可能是由软件中断触发的机制，因为 <code>MaxDataSize</code> 相关全局变量会被这个路径引用，<code>MaxDataSize</code>也在PatchGuard的上下文结构中。</p>
+<h3 id="破坏辅助例程"><a href="#破坏辅助例程" class="headerlink" title="破坏辅助例程"></a>破坏辅助例程</h3><p><code>DisableMiscRoutines()</code> 当前只真正做了一件事：把 <code>KiMcaDeferredRecoveryService</code> 改成直接返回，某些与 PatchGuard 相关的异常&#x2F;清理&#x2F;收尾路径会利用 <code>KiMcaDeferredRecoveryService</code></p>
+<h3 id="Barricade"><a href="#Barricade" class="headerlink" title="Barricade"></a>Barricade</h3><p>这本质上是一个先故意制造执行型缺页，再在缺页分发点筛选 PatchGuard的方法。</p>
+<p><code>InjectCustomInterruptHandler()</code> 通过自实现 trampoline hook 把 <code>MmAccessFault</code> 改写为 <code>HkMmAccessFault()</code>，</p>
+<p><code>HkMmAccessFault()</code> 只在以下条件下尝试特殊处理：</p>
+<ol>
+<li>其必须由 <code>KiPageFault</code>调用，检查返回地址是否等于 <code>KiPageFault</code>一定偏移的位置，</li>
+<li>故障类型符合 execute fault 的特征并且 <code>TrapInformation</code> 非空</li>
+</ol>
+<p>否则就直接走原始 <code>MmAccessFault</code>。</p>
+<h4 id="如何识别PatchGuard"><a href="#如何识别PatchGuard" class="headerlink" title="如何识别PatchGuard"></a>如何识别PatchGuard</h4><p>识别逻辑在 <code>CustomNxFaultHandler()</code></p>
+<p>从fault地址提取PML4索引，过滤掉用户模式的地址空间（索引 0~255 是用户模式地址空间）。</p>
+<p>调用 <code>GetPml4eVaType</code>从内核 <code>MiVisibleState</code>结构中，获取该 PML4 索引对应的内核虚拟地址类型。</p>
+<p>直接忽略 3 类地址：<code>MiVaProcessSpace</code>（进程空间）、<code>MiVaDriverImages</code>（驱动镜像空间）、<code>MiVaPagedPool</code>（分页池）—— 这些地址空间不会触发 PG 的 NX 异常。额外忽略页表自映射项的 PML4 索引（提取MmPteBase地址的PML4索引，判断是否相等），避免触发系统三重故障（triple fault）。</p>
+<p>判断PTE权限位和present位</p>
+<p>看当前 IRQL，PG 的绝大多数检查例程，都运行在 <code>DISPATCH_LEVEL</code>（中断请求级别 2），通过 DPC &#x2F; 定时器 DPC 执行，这是 PG 的核心环境特征。</p>
+<p>识别CmpAppendDllSection、KiDpcDispatch和KiTimerDispatch的执行路径</p>
+<p>看 RIP 附近的机器码，匹配几类作者观察到的 PG 执行片段。</p>
+<p>向上扫内核栈，看返回地址里是否出现 <code>KeDelayExecutionThread</code>、<code>KeWaitForMultipleObjects</code>、<code>KeWaitForSingleObject</code> 这类等待例程。因为验证例程完成后，一个小调度程序会在 KeDelayExecutionThread 或 KeWaitForSingleObject 之间进行选择。</p>
+<p>PoC 使用两类处理方式：</p>
+<ol>
+<li><code>HaltNxFault</code> 直接改 trap frame，把 <code>RIP</code> 弹回返回地址，相当于跳过当前故障执行点。</li>
+<li><code>HaltNxFault2</code> 对线程等待场景做更复杂的 trap frame 伪造，模拟 <code>KeDelayExecutionThread</code> 等待。</li>
+</ol>
+<h4 id="先把哪些页改成-NX"><a href="#先把哪些页改成-NX" class="headerlink" title="先把哪些页改成 NX"></a>先把哪些页改成 NX</h4><p><code>FlipPteNxBit()</code> &#x2F; <code>FlipPteNxBitIdPc()</code> 多核心并行遍历页表（将256个PML4索引平均分发给每个CPU），仅对 present 页处理并对 RWX 页设置 bit 63，也就是 NX bit。因为PG 执行体代码运行在非镜像页面上，并且能实时解密，这表明会落在这些动态RWX内存上。</p>
+<h4 id="如何写只读代码页"><a href="#如何写只读代码页" class="headerlink" title="如何写只读代码页"></a>如何写只读代码页</h4><p><code>WriteOnReadOnlyMemory()</code>利用 Windows 内核的 MDL（Memory Descriptor List，内存描述符表）机制，将目标物理页面重新映射到一个新的内核虚拟地址，并显式修改新映射地址的页表权限为读写，从而绕过原虚拟地址的只读限制 。</p>
+<p>分配 MDL，描述目标内存区域</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mdl = <span class="built_in">IoAllocateMdl</span>(dst, (ULONG)size, FALSE, FALSE, <span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>MDL 是 Windows 内核中管理物理内存的核心结构，它可以记录一段虚拟地址对应的物理页面，并允许我们对这些物理页面进行重新映射、权限修改等操作。</li>
+</ul>
+<p>锁定物理页面，防止被换出 <code>MmProbeAndLockPages(mdl, KernelMode, IoReadAccess);</code></p>
+<p>将物理页面重新映射到新的内核虚拟地址 <code>mapped = MmMapLockedPagesSpecifyCache(mdl, KernelMode, MmNonCached, NULL, FALSE, NormalPagePriority);</code></p>
+<p>修改新映射地址的权限为读写 <code>MmProtectMdlSystemAddress(mdl, PAGE_READWRITE);</code></p>
+<p>执行数据拷贝</p>
+<p>这就是该 PoC 修改 <code>MmAccessFault</code>、<code>KiSwInterruptDispatch</code>、<code>KiMcaDeferredRecoveryService</code> 等只读内核代码页的基础能力。</p>
+<h3 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h3><p><a target="_blank" rel="noopener" href="https://r0keb.github.io/posts/PatchGuard-Internals/">PatchGuard-Internals</a></p>
+<p><a target="_blank" rel="noopener" href="https://qi4l.github.io/2024/10/13/PatchGuard%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86/">PatchGuard工作原理</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.can.ac/2024/06/28/pgc-garbage-collecting-patchguard/">PgC: Garbage collecting Patchguard away</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/NeoMaster831/kurasagi">kurasagi</a></p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8Ekurasagi%E9%A1%B9%E7%9B%AE%E6%BA%90%E7%A0%81%E7%9C%8BPG-bypass"><span class="toc-number">1.</span> <span class="toc-text">从kurasagi项目源码看PG bypass</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#PatchGuard"><span class="toc-number">1.1.</span> <span class="toc-text">PatchGuard</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.1.1.</span> <span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PatchGuard-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.2.</span> <span class="toc-text">PatchGuard 上下文结构</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kurasagi%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.</span> <span class="toc-text">kurasagi实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Timer-kill"><span class="toc-number">1.2.1.</span> <span class="toc-text">Timer kill</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Kill-Software-Interrupt"><span class="toc-number">1.2.2.</span> <span class="toc-text">Kill Software Interrupt</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A0%B4%E5%9D%8F%E8%BE%85%E5%8A%A9%E4%BE%8B%E7%A8%8B"><span class="toc-number">1.2.3.</span> <span class="toc-text">破坏辅助例程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Barricade"><span class="toc-number">1.2.4.</span> <span class="toc-text">Barricade</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">1.2.5.</span> <span class="toc-text">参考文章</span></a></li></ol></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&text=从kurasagi项目源码看PG bypass"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&is_video=false&description=从kurasagi项目源码看PG bypass"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=从kurasagi项目源码看PG bypass&body=Check out this article: https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&title=从kurasagi项目源码看PG bypass"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&name=从kurasagi项目源码看PG bypass&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-pg_bypass/&t=从kurasagi项目源码看PG bypass"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

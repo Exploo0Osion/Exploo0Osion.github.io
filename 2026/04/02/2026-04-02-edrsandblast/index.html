@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="从EdrSandblast项目源码看Edr bypassEdrSandblast本质上是利用了BYOVD存在的任意地址读写漏洞进行的漏洞利用行为，针对Edr注册的通知型回调、句柄回调、Minifilter文件监控、ETW Ti等进行摘除和禁用。 将进程提权到PPL权限利用NtQuerySystemInformation(SystemHandleInformation, …)获取全系统的句柄快照">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从EdrSandblast项目源码看Edr bypass">
+<meta property="og:url" content="https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/index.html">
+<meta property="og:site_name" content="wooo~ Exploooosion&#39;s blog">
+<meta property="og:description" content="从EdrSandblast项目源码看Edr bypassEdrSandblast本质上是利用了BYOVD存在的任意地址读写漏洞进行的漏洞利用行为，针对Edr注册的通知型回调、句柄回调、Minifilter文件监控、ETW Ti等进行摘除和禁用。 将进程提权到PPL权限利用NtQuerySystemInformation(SystemHandleInformation, …)获取全系统的句柄快照">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775296959754.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775295168185.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775296100134.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775271573048.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775272190310.png">
+<meta property="og:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775290555832.png">
+<meta property="article:published_time" content="2026-04-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-04-04T10:17:16.795Z">
+<meta property="article:author" content="Exploooosion">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://exploo0osion.github.io/image/2026-04-02-edrsandblast/1775296959754.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>从EdrSandblast项目源码看Edr bypass</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/2026/04/02/2026-04-02-pg_bypass/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&text=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&is_video=false&description=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=从EdrSandblast项目源码看Edr bypass&body=Check out this article: https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&name=从EdrSandblast项目源码看Edr bypass&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&t=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8EEdrSandblast%E9%A1%B9%E7%9B%AE%E6%BA%90%E7%A0%81%E7%9C%8BEdr-bypass"><span class="toc-number">1.</span> <span class="toc-text">从EdrSandblast项目源码看Edr bypass</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86%E8%BF%9B%E7%A8%8B%E6%8F%90%E6%9D%83%E5%88%B0PPL%E6%9D%83%E9%99%90"><span class="toc-number">1.1.</span> <span class="toc-text">将进程提权到PPL权限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bypass-Cred-Guard"><span class="toc-number">1.2.</span> <span class="toc-text">Bypass Cred Guard</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DSE-bypass"><span class="toc-number">1.3.</span> <span class="toc-text">DSE bypass</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A6%81%E7%94%A8ETW-TI"><span class="toc-number">1.4.</span> <span class="toc-text">禁用ETW-TI</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4%E9%80%9A%E7%9F%A5%E5%9E%8B%E5%9B%9E%E8%B0%83"><span class="toc-number">1.5.</span> <span class="toc-text">摘除通知型回调</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4%E5%AF%B9%E8%B1%A1%E5%9B%9E%E8%B0%83"><span class="toc-number">1.6.</span> <span class="toc-text">摘除对象回调</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4Minifilter%E6%96%87%E4%BB%B6%E7%9B%91%E6%8E%A7"><span class="toc-number">1.7.</span> <span class="toc-text">摘除Minifilter文件监控</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">1.8.</span> <span class="toc-text">参考文章</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        从EdrSandblast项目源码看Edr bypass
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Exploooosion</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2026-04-01T16:00:00.000Z" class="dt-published" itemprop="datePublished">2026-04-02</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/windows/">windows</a>
+    </div>
+
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <span id="more"></span>
+
+<h1 id="从EdrSandblast项目源码看Edr-bypass"><a href="#从EdrSandblast项目源码看Edr-bypass" class="headerlink" title="从EdrSandblast项目源码看Edr bypass"></a>从EdrSandblast项目源码看Edr bypass</h1><p>EdrSandblast本质上是利用了BYOVD存在的任意地址读写漏洞进行的漏洞利用行为，针对Edr注册的通知型回调、句柄回调、Minifilter文件监控、ETW Ti等进行摘除和禁用。</p>
+<h2 id="将进程提权到PPL权限"><a href="#将进程提权到PPL权限" class="headerlink" title="将进程提权到PPL权限"></a>将进程提权到PPL权限</h2><p>利用NtQuerySystemInformation(SystemHandleInformation, …)获取全系统的句柄快照</p>
+<p>句柄表中的每一项（<code>SYSTEM_HANDLE_TABLE_ENTRY_INFO</code>）包含了以下关键信息：</p>
+<ul>
+<li><code>UniqueProcessId</code>：该句柄所属的进程 ID。</li>
+<li><code>HandleValue</code>：用户态看到的句柄值（如 <code>OpenProcess</code> 返回的 <code>HANDLE</code>）。</li>
+<li><code>Object</code>：该句柄对应的内核对象的虚拟地址（即我们要找的 <code>EPROCESS</code> 地址）。</li>
+</ul>
+<p>利用内核任意地址写漏洞WriteMemoryWORD(processSignatureLevelAddress, flagPPLWinTcb);</p>
+<p>修改 EPROCESS 中的PS_PROTECTION的type为PsProtectedTypeProtectedLight，Signer为PsProtectedSignerWinTcb，一方面能保护该进程，另一方面使得该进程有权限打开别的进程的句柄。</p>
+<p>根据<a target="_blank" rel="noopener" href="https://www.cnblogs.com/revercc/p/16961961.html">PPL保护 - 怎么可以吃突突 - 博客园</a>的文章可知：</p>
+<p>PspProcessOpen函数首先会从根据目标进程的EPROCESS.Protection的Signer从RtlProtectedAccess表中获取此保护级别限制的权限。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">RTL_PROTECTED_ACCESS RtlProtectedAccess[] =</span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">//   Domination,       Process,         Thread,</span></span><br><span class="line"><span class="comment">//         Mask,  Restrictions,   Restrictions,                                  </span></span><br><span class="line">    &#123;         <span class="number">0</span>,             <span class="number">0</span>,             <span class="number">0</span>&#125;, <span class="comment">//PsProtectedSignerNone          </span></span><br><span class="line">    &#123;         <span class="number">2</span>,    <span class="number">0x000fc7fe</span>,    <span class="number">0x000fe3fd</span>&#125;, <span class="comment">//PsProtectedSignerAuthenticode  </span></span><br><span class="line">    &#123;         <span class="number">4</span>,    <span class="number">0x000fc7fe</span>,    <span class="number">0x000fe3fd</span>&#125;, <span class="comment">//PsProtectedSignerCodeGen       </span></span><br><span class="line">    &#123;     <span class="number">0x108</span>,    <span class="number">0x000fc7ff</span>,    <span class="number">0x000fe3ff</span>&#125;, <span class="comment">//PsProtectedSignerAntimalware    </span></span><br><span class="line">    &#123;     <span class="number">0x110</span>,    <span class="number">0x000fc7ff</span>,    <span class="number">0x000fe3ff</span>&#125;, <span class="comment">//PsProtectedSignerLsa           </span></span><br><span class="line">    &#123;     <span class="number">0x13e</span>,    <span class="number">0x000fc7fe</span>,    <span class="number">0x000fe3fd</span>&#125;, <span class="comment">//PsProtectedSignerWindows        </span></span><br><span class="line">    &#123;     <span class="number">0x17e</span>,    <span class="number">0x000fc7ff</span>,    <span class="number">0x000fe3ff</span>&#125;, <span class="comment">//PsProtectedSignerTcb            </span></span><br><span class="line">    &#123;     <span class="number">0x1fe</span>,    <span class="number">0x000fefff</span>,    <span class="number">0x000ff7ff</span>&#125;, <span class="comment">//PsProtectedSignerWinSystem           </span></span><br><span class="line">    &#123;         <span class="number">0</span>,    <span class="number">0x000fc6fe</span>,    <span class="number">0x000fe3fd</span>&#125;, <span class="comment">//PsProtectedSignerApp            </span></span><br><span class="line">  </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>各个Signer等级对应的权限控制如下：</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775296959754.png" alt="1775296959754"></p>
+<p>PspProcessOpen的检查规则如下：</p>
+<ul>
+<li>如果访问的权限符合受保护进程的权限限制则正常执行（这里注意如果目标进程是当前进程的子进程则可以额外允许PROCESS_TERMINATE权限）</li>
+<li>如果目标进程等于当前进程则正常执行</li>
+<li>如果是内核中调用（PreviousMode &#x3D; 0）则正常执行</li>
+<li>如果目标进程不是PP(L)进程则正常执行</li>
+<li>如果目标进程是PPL类型而当前进程是PP类型则正常执行</li>
+<li>如果目标进程和当前进程都是PP&#x2F;PPL类型，当前进程的Protection.Signer级别高于目标进程则正常执行</li>
+<li>其他情况PspProcessOpen都会返回 <code>0xC0000022</code>拒绝访问</li>
+</ul>
+<h2 id="Bypass-Cred-Guard"><a href="#Bypass-Cred-Guard" class="headerlink" title="Bypass Cred Guard"></a>Bypass Cred Guard</h2><p>找到lsass.exe中的wdigest.dll模块</p>
+<p>ReadDwordRegistrySetting函数表示如果注册表检索到了”UseLogonCredential”键值，就让g_fParameter_UseLogonCredential&#x3D;0，用于确定是否应将明文密码存储在内存中</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775295168185.png" alt="1775295168185"></p>
+<p>g_IsCredGuardEnabled变量用于保存模块内 Credential Guard 的状态，并决定 Wdigest 后续是否使用 Credential Guard 兼容的功能</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775296100134.png" alt="1775296100134"></p>
+<p>项目中将g_IsCredGuardEnabled设置为0x0并设置g_fParameter_UseLogonCredential为0x1;</p>
+<h2 id="DSE-bypass"><a href="#DSE-bypass" class="headerlink" title="DSE bypass"></a>DSE bypass</h2><p>项目使用了两个方法</p>
+<p>第一种是直接将ci.dll里的g_CiOptions地址然后改成0即可。</p>
+<p>这里使用EnumDeviceDrivers获取ci.dll的内核基地址信息，但从 Windows 11 版本 24H2 开始就要求 SeDebugPrivilege权限</p>
+<p>第二种是将Ci!CiValidateImageHeader替换成ZwFlushInstructionCache</p>
+<p><code>ntoskrnl.exe</code> 导出了一个全局内核结构体 <code>SeCiCallbacks</code></p>
+<p>系统启动时，CI.dll 会通过 <code>CiInitialize</code> 函数，将自身的 <code>CiValidateImageHeader</code>、<code>CiValidateImageData</code> 等校验函数，填充到这个结构体中，通过这个回调表间接调用对应的校验函数；</p>
+<h2 id="禁用ETW-TI"><a href="#禁用ETW-TI" class="headerlink" title="禁用ETW-TI"></a>禁用ETW-TI</h2><p>内核使用EtwProviderEnabled函数来检查特定提供程序是否已启用来记录事件：</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775271573048.png" alt="1775271573048"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BOOLEAN <span class="title function_">EtwProviderEnabled</span><span class="params">(</span></span><br><span class="line"><span class="params">  [in] REGHANDLE RegHandle,</span></span><br><span class="line"><span class="params">  [in] UCHAR     Level,</span></span><br><span class="line"><span class="params">  [in] ULONGLONG Keyword</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>EtwProviderEnabled 函数验证提供程序是否在指定的级别和关键字上启用了事件日志记录。</p>
+<p>这里它找到全局变量里的EtwThreatIntProvRegHandle，其句柄结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//0x70 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">ETW_REG_ENTRY</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">RegList</span>;</span>                                             <span class="comment">//0x0</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">GroupRegList</span>;</span>                                        <span class="comment">//0x10</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_GUID_ENTRY</span>* <span class="title">GuidEntry</span>;</span>                                      <span class="comment">//0x20</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_GUID_ENTRY</span>* <span class="title">GroupEntry</span>;</span>                                     <span class="comment">//0x28</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_REPLY_QUEUE</span>* <span class="title">ReplyQueue</span>;</span>                                <span class="comment">//0x30</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_QUEUE_ENTRY</span>* <span class="title">ReplySlot</span>[4];</span>                              <span class="comment">//0x30</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">        &#123;</span></span><br><span class="line">            VOID* Caller;                                                   <span class="comment">//0x30</span></span><br><span class="line">            ULONG SessionId;                                                <span class="comment">//0x38</span></span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">EPROCESS</span>* <span class="title">Process</span>;</span>                                          <span class="comment">//0x50</span></span><br><span class="line">        VOID* CallbackContext;                                              <span class="comment">//0x50</span></span><br><span class="line">    &#125;;</span><br><span class="line">    VOID* Callback;                                                         <span class="comment">//0x58</span></span><br><span class="line">    USHORT Index;                                                           <span class="comment">//0x60</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        USHORT Flags;                                                       <span class="comment">//0x62</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">        &#123;</span></span><br><span class="line">            USHORT DbgKernelRegistration:<span class="number">1</span>;                                 <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgUserRegistration:<span class="number">1</span>;                                   <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgReplyRegistration:<span class="number">1</span>;                                  <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgClassicRegistration:<span class="number">1</span>;                                <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgSessionSpaceRegistration:<span class="number">1</span>;                           <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgModernRegistration:<span class="number">1</span>;                                 <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgClosed:<span class="number">1</span>;                                             <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgInserted:<span class="number">1</span>;                                           <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgWow64:<span class="number">1</span>;                                              <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgUseDescriptorType:<span class="number">1</span>;                                  <span class="comment">//0x62</span></span><br><span class="line">            USHORT DbgDropProviderTraits:<span class="number">1</span>;                                 <span class="comment">//0x62</span></span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    UCHAR EnableMask;                                                       <span class="comment">//0x64</span></span><br><span class="line">    UCHAR GroupEnableMask;                                                  <span class="comment">//0x65</span></span><br><span class="line">    UCHAR HostEnableMask;                                                   <span class="comment">//0x66</span></span><br><span class="line">    UCHAR HostGroupEnableMask;                                              <span class="comment">//0x67</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_PROVIDER_TRAITS</span>* <span class="title">Traits</span>;</span>                                    <span class="comment">//0x68</span></span><br><span class="line">&#125;; </span><br><span class="line"><span class="comment">//0x1a8 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">ETW_GUID_ENTRY</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">GuidList</span>;</span>                                            <span class="comment">//0x0</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">SiloGuidList</span>;</span>                                        <span class="comment">//0x10</span></span><br><span class="line">    <span class="keyword">volatile</span> LONGLONG RefCount;                                             <span class="comment">//0x20</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">GUID</span> <span class="title">Guid</span>;</span>                                                      <span class="comment">//0x28</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">RegListHead</span>;</span>                                         <span class="comment">//0x38</span></span><br><span class="line">    VOID* SecurityDescriptor;                                               <span class="comment">//0x48</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span></span></span><br><span class="line"><span class="class">    &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_LAST_ENABLE_INFO</span> <span class="title">LastEnable</span>;</span>                            <span class="comment">//0x50</span></span><br><span class="line">        ULONGLONG MatchId;                                                  <span class="comment">//0x50</span></span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">TRACE_ENABLE_INFO</span> <span class="title">ProviderEnableInfo</span>;</span>                           <span class="comment">//0x60</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">TRACE_ENABLE_INFO</span> <span class="title">EnableInfo</span>[8];</span>                                <span class="comment">//0x80</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_FILTER_HEADER</span>* <span class="title">FilterData</span>;</span>                                  <span class="comment">//0x180</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_SILODRIVERSTATE</span>* <span class="title">SiloState</span>;</span>                                 <span class="comment">//0x188</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETW_GUID_ENTRY</span>* <span class="title">HostEntry</span>;</span>                                      <span class="comment">//0x190</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">EX_PUSH_LOCK</span> <span class="title">Lock</span>;</span>                                              <span class="comment">//0x198</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">ETHREAD</span>* <span class="title">LockOwner</span>;</span>                                             <span class="comment">//0x1a0</span></span><br><span class="line">&#125;; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>根据源码和内核反编译的信息来看，它使用任意地址读写去清空EtwThreatIntProvRegHandle.GuidEntry.ProviderEnableInfo</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775272190310.png" alt="1775272190310"></p>
+<p>另外很多ETW的provider都在内核里保存着对于的句柄结构，同样的方法可以去禁用其他的ETW provider</p>
+<h2 id="摘除通知型回调"><a href="#摘除通知型回调" class="headerlink" title="摘除通知型回调"></a>摘除通知型回调</h2><p>内核维护了PspCreateProcessNotifyRoutine、PspCreateThreadNotifyRoutine、PspLoadImageNotifyRoutined的这些可以分别最多存放64个回调函数地址的全局数组，项目直接通过数组中的函数地址来判断其在哪个驱动的范围内，对比已知名单的驱动名称，摘除直接清零即可。</p>
+<h2 id="摘除对象回调"><a href="#摘除对象回调" class="headerlink" title="摘除对象回调"></a>摘除对象回调</h2><p>通过 <code>ObRegisterCallbacks()</code>注册回调函数，注册的对象类型：<code>PsProcessType</code>、<code>PsThreadType</code> 为全局内核变量，它俩是 <code>OBJECT_TYPE</code> 结构，如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//0xd8 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">OBJECT_TYPE</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">LIST_ENTRY</span> <span class="title">TypeList</span>;</span>                                            <span class="comment">//0x0</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">UNICODE_STRING</span> <span class="title">Name</span>;</span>                                            <span class="comment">//0x10</span></span><br><span class="line">    VOID* DefaultObject;                                                    <span class="comment">//0x20</span></span><br><span class="line">    UCHAR Index;                                                            <span class="comment">//0x28</span></span><br><span class="line">    ULONG TotalNumberOfObjects;                                             <span class="comment">//0x2c</span></span><br><span class="line">    ULONG TotalNumberOfHandles;                                             <span class="comment">//0x30</span></span><br><span class="line">    ULONG HighWaterNumberOfObjects;                                         <span class="comment">//0x34</span></span><br><span class="line">    ULONG HighWaterNumberOfHandles;                                         <span class="comment">//0x38</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">OBJECT_TYPE_INITIALIZER</span> <span class="title">TypeInfo</span>;</span>                               <span class="comment">//0x40</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">EX_PUSH_LOCK</span> <span class="title">TypeLock</span>;</span>                                          <span class="comment">//0xb8</span></span><br><span class="line">    ULONG Key;                                                              <span class="comment">//0xc0</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">OB_CALLBACK_ENTRY_t</span> <span class="title">CallbackList</span>;</span>                                        <span class="comment">//0xc8</span></span><br><span class="line">&#125;; </span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">OB_CALLBACK_ENTRY_t</span> &#123;</span></span><br><span class="line">    LIST_ENTRY CallbackList; <span class="comment">// linked element tied to _OBJECT_TYPE.CallbackList</span></span><br><span class="line">    OB_OPERATION Operations; <span class="comment">// bitfield : 1 for Creations, 2 for Duplications</span></span><br><span class="line">    BOOL Enabled;            <span class="comment">// self-explanatory</span></span><br><span class="line">    OB_CALLBACK* Entry;      <span class="comment">// points to the structure in which it is included</span></span><br><span class="line">    POBJECT_TYPE ObjectType; <span class="comment">// points to the object type affected by the callback</span></span><br><span class="line">    POB_PRE_OPERATION_CALLBACK PreOperation;      <span class="comment">// callback function called before each handle operation</span></span><br><span class="line">    POB_POST_OPERATION_CALLBACK PostOperation;     <span class="comment">// callback function called after each handle operation</span></span><br><span class="line">    KSPIN_LOCK Lock;         <span class="comment">// lock object used for synchronization</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>项目也是通过PreOperation&#x2F;PostOperation的函数地址来判断其在哪个驱动的范围内，修改Enabled字段就能失效对象回调。</p>
+<p>注：对于注册表回调，则需要找到 <code>CallbackListHead</code>的位置</p>
+<h2 id="摘除Minifilter文件监控"><a href="#摘除Minifilter文件监控" class="headerlink" title="摘除Minifilter文件监控"></a>摘除Minifilter文件监控</h2><p>EDR 注册了微过滤器驱动程序，能够监控所有落地的文件，并且也能保护其自身或指定的文件不被删除。</p>
+<p>FltGlobals是一个坐落于fltMgr.sys的.data段的一个结构体</p>
+<p>FltGlobals.FrameList._FLT_RESOURCE_LIST_HEAD_rList该处是一个双向链表结构，其-0x8的位置就是一个FLTP_FRAME结构，FLTP_FRAME.RegisteredFillters.rList的双向链表，减去0x10 就是_FLT_FILTER 的地址。</p>
+<p><img src="/image/2026-04-02-edrsandblast/1775290555832.png" alt="1775290555832"></p>
+<p>其结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">kd&gt; dt fltmgr!_FLT_FILTER</span><br><span class="line">   +<span class="number">0x000</span> Base             : _FLT_OBJECT</span><br><span class="line">   +<span class="number">0x030</span> Frame            : Ptr64 _FLTP_FRAME</span><br><span class="line">   +<span class="number">0x038</span> Name             : _UNICODE_STRING</span><br><span class="line">   +<span class="number">0x048</span> DefaultAltitude  : _UNICODE_STRING</span><br><span class="line">   +<span class="number">0x058</span> Flags            : _FLT_FILTER_FLAGS</span><br><span class="line">   +<span class="number">0x060</span> DriverObject     : Ptr64 _DRIVER_OBJECT</span><br><span class="line">   +<span class="number">0x068</span> InstanceList     : _FLT_RESOURCE_LIST_HEAD</span><br><span class="line">   +<span class="number">0x0e8</span> VerifierExtension : Ptr64 _FLT_VERIFIER_EXTENSION</span><br><span class="line">   +<span class="number">0x0f0</span> VerifiedFiltersLink : _LIST_ENTRY</span><br><span class="line">   +<span class="number">0x100</span> FilterUnload     : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x108</span> InstanceSetup    : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x110</span> InstanceQueryTeardown : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x118</span> InstanceTeardownStart : Ptr64     <span class="type">void</span> </span><br><span class="line">   +<span class="number">0x120</span> InstanceTeardownComplete : Ptr64     <span class="type">void</span> </span><br><span class="line">   +<span class="number">0x128</span> SupportedContextsListHead : Ptr64 _ALLOCATE_CONTEXT_HEADER</span><br><span class="line">   +<span class="number">0x130</span> SupportedContexts : [<span class="number">7</span>] Ptr64 _ALLOCATE_CONTEXT_HEADER</span><br><span class="line">   +<span class="number">0x168</span> PreVolumeMount   : Ptr64     _FLT_PREOP_CALLBACK_STATUS </span><br><span class="line">   +<span class="number">0x170</span> PostVolumeMount  : Ptr64     _FLT_POSTOP_CALLBACK_STATUS </span><br><span class="line">   +<span class="number">0x178</span> GenerateFileName : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x180</span> NormalizeNameComponent : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x188</span> NormalizeNameComponentEx : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x190</span> NormalizeContextCleanup : Ptr64     <span class="type">void</span> </span><br><span class="line">   +<span class="number">0x198</span> KtmNotification  : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x1a0</span> SectionNotification : Ptr64     <span class="type">long</span> </span><br><span class="line">   +<span class="number">0x1a8</span> Operations       : Ptr64 _FLT_OPERATION_REGISTRATION</span><br><span class="line">   +<span class="number">0x1b0</span> OldDriverUnload  : Ptr64     <span class="type">void</span> </span><br><span class="line">   +<span class="number">0x1b8</span> ActiveOpens      : _FLT_MUTEX_LIST_HEAD</span><br><span class="line">   +<span class="number">0x208</span> ConnectionList   : _FLT_MUTEX_LIST_HEAD</span><br><span class="line">   +<span class="number">0x258</span> PortList         : _FLT_MUTEX_LIST_HEAD</span><br><span class="line">   +<span class="number">0x2a8</span> PortLock         : _EX_PUSH_LOCK</span><br><span class="line"><span class="comment">//0x150 bytes (sizeof)</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">DRIVER_OBJECT</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    SHORT Type;                                                             <span class="comment">//0x0</span></span><br><span class="line">    SHORT Size;                                                             <span class="comment">//0x2</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">DEVICE_OBJECT</span>* <span class="title">DeviceObject</span>;</span>                                    <span class="comment">//0x8</span></span><br><span class="line">    ULONG Flags;                                                            <span class="comment">//0x10</span></span><br><span class="line">    VOID* DriverStart;                                                      <span class="comment">//0x18</span></span><br><span class="line">    ULONG DriverSize;                                                       <span class="comment">//0x20</span></span><br><span class="line">    VOID* DriverSection;                                                    <span class="comment">//0x28</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">DRIVER_EXTENSION</span>* <span class="title">DriverExtension</span>;</span>                              <span class="comment">//0x30</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">UNICODE_STRING</span> <span class="title">DriverName</span>;</span>                                      <span class="comment">//0x38</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">UNICODE_STRING</span>* <span class="title">HardwareDatabase</span>;</span>                               <span class="comment">//0x48</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> _<span class="title">FAST_IO_DISPATCH</span>* <span class="title">FastIoDispatch</span>;</span>                               <span class="comment">//0x50</span></span><br><span class="line">    LONG (*DriverInit)(<span class="keyword">struct</span> _DRIVER_OBJECT* arg1, <span class="keyword">struct</span> _UNICODE_STRING* arg2); <span class="comment">//0x58</span></span><br><span class="line">    VOID (*DriverStartIo)(<span class="keyword">struct</span> _DEVICE_OBJECT* arg1, <span class="keyword">struct</span> _IRP* arg2);  <span class="comment">//0x60</span></span><br><span class="line">    VOID (*DriverUnload)(<span class="keyword">struct</span> _DRIVER_OBJECT* arg1);                      <span class="comment">//0x68</span></span><br><span class="line">    LONG (*MajorFunction[<span class="number">28</span>])(<span class="keyword">struct</span> _DEVICE_OBJECT* arg1, <span class="keyword">struct</span> _IRP* arg2); <span class="comment">//0x70</span></span><br><span class="line">&#125;; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>项目这里根据DriverObject-&gt;DriverInit的函数地址范围判断所属驱动，</p>
+<p>_FLT_FILTER.InstanceList.rList双向链表指向的位置-0x70就是_FLT_INSTANCE，其中有CallbackNodes数组保存了回调函数结构的地址，对其中的每个回调函数进行摘链即可。</p>
+<p>注：参考文章中选择的是对该CallbackNodes数组进行清空，但实际上不止_FLT_INSTANCE中保存着该数组，FLT_VOLUMES里也会保存，所以正确的做法是对链表进行摘链。并且盲目地清空CallbackNodes数组会触发PG保护，应该是该结构体在PG保护的范围内。</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a target="_blank" rel="noopener" href="https://xz.aliyun.com/news/12383">AV&#x2F;EDR 完全致盲 - 清除6大内核回调实现-先知社区</a></p>
+<p><a target="_blank" rel="noopener" href="https://github.com/wavestone-cdt/EDRSandblast">EDRSandblast</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.xpnsec.com/exploring-mimikatz-part-1/">Exploring Mimikatz - Part 1 - WDigest - XPN InfoSec Blog</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/revercc/p/16961961.html">PPL保护 - 怎么可以吃突突 - 博客园</a></p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a href="/categories/">Category</a></li>
+        
+          <li><a href="/search/">Search</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/friends/">friends</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8EEdrSandblast%E9%A1%B9%E7%9B%AE%E6%BA%90%E7%A0%81%E7%9C%8BEdr-bypass"><span class="toc-number">1.</span> <span class="toc-text">从EdrSandblast项目源码看Edr bypass</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86%E8%BF%9B%E7%A8%8B%E6%8F%90%E6%9D%83%E5%88%B0PPL%E6%9D%83%E9%99%90"><span class="toc-number">1.1.</span> <span class="toc-text">将进程提权到PPL权限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bypass-Cred-Guard"><span class="toc-number">1.2.</span> <span class="toc-text">Bypass Cred Guard</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DSE-bypass"><span class="toc-number">1.3.</span> <span class="toc-text">DSE bypass</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A6%81%E7%94%A8ETW-TI"><span class="toc-number">1.4.</span> <span class="toc-text">禁用ETW-TI</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4%E9%80%9A%E7%9F%A5%E5%9E%8B%E5%9B%9E%E8%B0%83"><span class="toc-number">1.5.</span> <span class="toc-text">摘除通知型回调</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4%E5%AF%B9%E8%B1%A1%E5%9B%9E%E8%B0%83"><span class="toc-number">1.6.</span> <span class="toc-text">摘除对象回调</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%91%98%E9%99%A4Minifilter%E6%96%87%E4%BB%B6%E7%9B%91%E6%8E%A7"><span class="toc-number">1.7.</span> <span class="toc-text">摘除Minifilter文件监控</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">1.8.</span> <span class="toc-text">参考文章</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&text=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&is_video=false&description=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=从EdrSandblast项目源码看Edr bypass&body=Check out this article: https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&title=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&name=从EdrSandblast项目源码看Edr bypass&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://exploo0osion.github.io/2026/04/02/2026-04-02-edrsandblast/&t=从EdrSandblast项目源码看Edr bypass"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2025-2026
+    Exploooosion
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a href="/categories/">Category</a></li><!--
+     --><!--
+       --><li><a href="/search/">Search</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/friends/">friends</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
